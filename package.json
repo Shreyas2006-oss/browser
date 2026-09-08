@@ -1,0 +1,90 @@
+{
+  "name": "silence",
+  "productName": "Silence",
+  "version": "2.1.0",
+  "description": "A silent, distraction-free browser",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64",
+    "dist:installer": "electron-builder --win --x64 --config.win.target=nsis",
+    "dist:portable": "electron-builder --win --x64 --config.win.target=portable",
+    "deps": "npm install --no-audit --no-fund",
+    "update-electron": "npm install --save-dev electron@latest --no-audit --no-fund"
+  },
+  "devDependencies": {
+    "electron": "^37.10.3",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.rshre.silence",
+    "productName": "Silence",
+    "copyright": "Copyright \u00a9 2026",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "package.json",
+      "icon.jpg",
+      "icon.ico",
+      "silence-core.js",
+      "silence-plus.js",
+      "silence-plus.css",
+      "silence-pro.js",
+      "silence-pro.css",
+      "silence-pro-core.js",
+      "store.html",
+      "store-preload.js",
+      "extension-store-backend.js",
+      "catalog.json",
+      "gesture-preload.js",
+      "check-silence.js",
+      "node_modules/**/*",
+      "!node_modules/.cache/**",
+      "!**/*.map",
+      "!**/Thumbs.db",
+      "!dist/**",
+      "!build/**"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Silence",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Silence ${version} portable.exe"
+    },
+    "allowMissingDependencies": true
+  },
+  "author": "rshre",
+  "optionalDependencies": {
+    "@ghostery/adblocker-electron": "^2.18.2",
+    "cross-fetch": "^4.1.0",
+    "electron-chrome-extensions": "^4.9.0"
+  }
+}

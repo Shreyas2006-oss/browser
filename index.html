@@ -1,0 +1,3436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' data:; media-src *; connect-src *; frame-src *; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Silence</title>
+  <link rel="stylesheet" href="silence-plus.css" />
+  <link rel="stylesheet" href="silence-pro.css" />
+  <style>
+    :root {
+      --bg: #0b0b0b;
+      --surface: rgba(22, 22, 22, 0.94);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --text: #f3f4f6;
+      --text-muted: #828594;
+      --radius: 12px;
+      --sidebar-width: 280px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      user-select: none;
+    }
+
+    button {
+      outline: none;
+      font-family: inherit;
+    }
+    button:focus { outline: none; }
+    button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    /* Top Titlebar Window Region */
+    #titlebar {
+      height: 32px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 10px;
+      -webkit-app-region: drag;
+      z-index: 10002;
+      background: var(--bg);
+      transition: height 0.2s, opacity 0.2s;
+    }
+    .browser-webview.html-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 10040 !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+    #html-fs-hint {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10041;
+      background: rgba(10, 10, 10, 0.82);
+      color: #fff;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      display: none;
+      pointer-events: none;
+      backdrop-filter: blur(12px);
+    }
+    /* Presentation & HTML5 Fullscreen */
+    body.html-fullscreen #titlebar,
+    body.html-fullscreen #sidebar-wrapper,
+    body.html-fullscreen #edge-hover-zone,
+    body.html-fullscreen #sidebar-pill-trigger,
+    body.html-fullscreen #link-hover-chip,
+    body.html-fullscreen #split-control-pill,
+    body.html-fullscreen #split-divider,
+    body.html-fullscreen #new-tab-prompt,
+    body.html-fullscreen #zoom-indicator-pill,
+    body.html-fullscreen .edge-overscroll-bubble {
+      display: none !important;
+    }
+    body.html-fullscreen #viewport-container {
+      margin: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+    body.html-fullscreen .browser-webview.active,
+    body.html-fullscreen .browser-webview.active-primary {
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 999999 !important;
+    }
+    #html-fs-hint.visible { display: block; }
+    body.fullscreen #titlebar { display: none !important; }
+
+    .window-controls { display: flex; align-items: center; gap: 4px; -webkit-app-region: no-drag; }
+    .win-btn {
+      width: 28px;
+      height: 24px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .win-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .win-btn.close:hover { background: #e11d48; color: #fff; }
+
+    /* Edge Hover Sensor & Indicator Pill */
+    #edge-hover-zone {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 16px;
+      height: 100vh;
+      z-index: 10000;
+      background: transparent;
+    }
+    #sidebar-pill-trigger {
+      position: fixed;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.28);
+      border-radius: 0 8px 8px 0;
+      cursor: pointer;
+      z-index: 10001;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #sidebar-pill-trigger:hover { width: 10px; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+
+    /* Edge Overscroll Circular Pill - 1:1 match to Microsoft Edge */
+    .edge-overscroll-bubble {
+      position: absolute;
+      top: 50%;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #1e293b;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 1px 4px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10008;
+      pointer-events: none;
+      opacity: 0;
+      will-change: transform, opacity;
+      transition: transform 0.08s ease-out, opacity 0.08s ease-out;
+    }
+    #edge-bubble-left { left: -54px; transform: translateY(-50%) translateX(0); }
+    #edge-bubble-right { right: -54px; transform: translateY(-50%) translateX(0); }
+    .edge-overscroll-bubble.ready {
+      box-shadow: 0 0 0 3px var(--accent), 0 8px 24px rgba(0, 0, 0, 0.45);
+      color: var(--accent);
+    }
+    .edge-bubble-arrow { transition: transform 0.15s ease; }
+    .edge-overscroll-bubble.ready .edge-bubble-arrow { transform: scale(1.15); }
+
+    #link-hover-chip {
+      position: fixed;
+      bottom: 18px;
+      left: 20px;
+      max-width: 450px;
+      background: rgba(18, 18, 18, 0.94);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(20px);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #a5b4fc;
+      z-index: 10009;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    }
+    #link-hover-chip.visible { opacity: 1; transform: translateY(0); }
+
+    #zoom-indicator-pill {
+      position: absolute;
+      top: 14px;
+      right: 20px;
+      background: rgba(22, 22, 22, 0.95);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10007;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    #zoom-indicator-pill.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .zoom-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 2px 4px; }
+    .zoom-btn:hover { color: #fff; }
+
+    #sidebar-wrapper {
+      position: fixed;
+      top: 36px;
+      left: 10px;
+      height: calc(100% - 46px);
+      width: var(--sidebar-width);
+      transform: translateX(calc(-100% - 24px));
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s, height 0.2s;
+      z-index: 10003;
+    }
+    body.fullscreen #sidebar-wrapper { top: 12px; height: calc(100% - 24px); }
+    #sidebar-wrapper.open, #sidebar-wrapper.pinned { transform: translateX(0); }
+
+    #sidebar {
+      width: 100%;
+      height: 100%;
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transform: translateZ(0);
+    }
+
+    .sidebar-header { display: flex; align-items: center; justify-content: space-between; }
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .brand-logo {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      object-fit: cover;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .brand-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+    .header-right-actions { display: flex; align-items: center; gap: 3px; }
+    #fullscreen-window-controls { display: none; align-items: center; gap: 2px; }
+    body.fullscreen #fullscreen-window-controls { display: flex !important; }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+    .icon-btn.active {
+      background: rgba(99, 102, 241, 0.28) !important;
+      color: #c7d2fe !important;
+      border-color: rgba(99, 102, 241, 0.5) !important;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
+    }
+
+    #dl-indicator-dot {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 6px #34d399;
+      display: none;
+    }
+
+    .nav-bar-container { position: relative; width: 100%; }
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(12, 12, 12, 0.65);
+      border: 1px solid var(--surface-border);
+      border-radius: 9px;
+      padding: 3px 6px;
+    }
+    .nav-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 12.5px;
+      padding: 5px 4px;
+      min-width: 0;
+    }
+
+    /* Live Omnibox Suggestions Dropdown */
+    #omnibox-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      background: rgba(20, 20, 20, 0.98);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 16px var(--accent-glow);
+      backdrop-filter: blur(28px);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 10015;
+    }
+    #omnibox-dropdown.open { display: flex; }
+    .suggest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .suggest-item:hover, .suggest-item.selected { background: rgba(99, 102, 241, 0.2); color: #fff; }
+    .suggest-bangs {
+      display: flex;
+      gap: 6px;
+      padding: 6px 12px;
+      border-top: 1px solid var(--surface-border);
+      background: rgba(0, 0, 0, 0.25);
+    }
+    .bang-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #a5b4fc;
+      cursor: pointer;
+    }
+    .bang-tag:hover { background: var(--accent); color: #fff; }
+
+    #cws-install-btn {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    #cws-install-btn.active { display: flex; }
+
+    #extension-toolbar-icons { display: flex; align-items: center; gap: 3px; }
+    .ext-toolbar-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    .ext-toolbar-btn:hover { background: rgba(255, 255, 255, 0.12); }
+    .ext-toolbar-btn img { width: 14px; height: 14px; border-radius: 3px; }
+
+    .tabs-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 2px;
+    }
+    .tabs-scroll-area::-webkit-scrollbar { width: 4px; }
+    .tabs-scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: #6b6b6b;
+      font-weight: 700;
+      padding: 0 4px;
+    }
+
+    .tab-group { display: flex; flex-direction: column; gap: 4px; }
+    .tab-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-muted);
+      position: relative;
+      transition: all 0.15s ease;
+    }
+    .tab-item:hover { background: rgba(255, 255, 255, 0.06); color: var(--text); }
+    .tab-item.active { background: rgba(99, 102, 241, 0.16); border-color: rgba(99, 102, 241, 0.35); color: #fff; font-weight: 500; }
+    .tab-item.dragging { opacity: 0.4; }
+    .tab-item.drag-over { border-top: 2px solid var(--accent); }
+    .tab-item.sleeping { opacity: 0.65; font-style: italic; }
+    .tab-favicon { width: 14px; height: 14px; border-radius: 3px; object-fit: contain; }
+    .tab-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .tab-audio-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .tab-item.audible .tab-audio-btn { display: flex; }
+    .tab-item.sleeping .tab-audio-btn { display: none; }
+
+    .tab-actions { display: none; align-items: center; gap: 2px; }
+    .tab-item:hover .tab-actions { display: flex; }
+    .tab-action-btn {
+      width: 18px;
+      height: 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+    .tab-action-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    /* Reader Mode Overlay */
+    #reader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #111111;
+      z-index: 10020;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+    #reader-overlay.open { display: flex; }
+    #reader-overlay.theme-sepia { background: #fbf0d9; color: #433422; }
+    #reader-overlay.theme-light { background: #ffffff; color: #1e293b; }
+
+    .reader-toolbar {
+      position: sticky;
+      top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(22, 22, 22, 0.95);
+      border: 1px solid var(--surface-border);
+      border-radius: 30px;
+      padding: 6px 16px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(24px);
+      z-index: 10;
+    }
+    .reader-container {
+      width: min(720px, 92vw);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 24px;
+      line-height: 1.85;
+      font-size: 17px;
+    }
+    .reader-container h1 { font-size: 32px; font-weight: 700; line-height: 1.3; }
+    .reader-meta { font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; border-bottom: 1px solid var(--surface-border); padding-bottom: 14px; }
+    .reader-content p { margin-bottom: 1.4em; }
+
+    /* Universal File Drag & Drop Overlay */
+    #file-drop-overlay {
+      position: fixed;
+      top: 36px;
+      left: 10px;
+      width: calc(100vw - 20px);
+      height: calc(100vh - 46px);
+      background: rgba(11, 11, 11, 0.85);
+      backdrop-filter: blur(20px);
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      z-index: 10025;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none !important;
+      opacity: 0;
+      transition: opacity 0.16s ease;
+    }
+    body.fullscreen #file-drop-overlay {
+      top: 10px;
+      left: 10px;
+      width: calc(100vw - 20px);
+      height: calc(100vh - 20px);
+    }
+    #file-drop-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+    .file-drop-modal {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #fff;
+      background: rgba(22, 22, 22, 0.94);
+      border: 1px solid var(--surface-border);
+      padding: 26px 40px;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 24px var(--accent-glow);
+    }
+    .file-drop-modal span { font-size: 14px; font-weight: 500; letter-spacing: 0.02em; }
+
+    /* Floating New Tab Request Prompt Menu */
+    #new-tab-prompt {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-24px);
+      background: rgba(20, 22, 30, 0.96);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 6px 10px 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 18px var(--accent-glow);
+      z-index: 10030;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+    }
+    #new-tab-prompt.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .ntp-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ntp-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ntp-text {
+      display: flex;
+      flex-direction: column;
+    }
+    .ntp-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+    .ntp-domain {
+      font-size: 12.5px;
+      color: #fff;
+      font-weight: 500;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ntp-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ntp-btn {
+      border: none;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 5px 11px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .ntp-btn.primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .ntp-btn.primary:hover {
+      filter: brightness(1.15);
+    }
+    .ntp-btn.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+    }
+    .ntp-btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .ntp-btn.dismiss {
+      background: transparent;
+      color: var(--text-muted);
+      padding: 5px 8px;
+    }
+    .ntp-btn.dismiss:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    #gesture-test-canvas {
+      width: 100%;
+      height: 140px;
+      background: #151515;
+      border: 1px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      cursor: crosshair;
+    }
+
+    .sidebar-footer {
+      display: flex;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid var(--surface-border);
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      overflow: hidden;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    #ext-popup-bubble {
+      position: fixed;
+      top: 80px;
+      left: 120px;
+      width: 360px;
+      height: 480px;
+      background: #151515;
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+      z-index: 10005;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #ext-popup-bubble.open { display: flex; }
+    #ext-popup-webview { width: 100%; height: 100%; border: none; background: #fff; }
+
+    #ext-menu-dropdown {
+      position: fixed;
+      top: 80px;
+      left: 200px;
+      width: 250px;
+      background: #181818;
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+      z-index: 10005;
+      display: none;
+      flex-direction: column;
+      padding: 8px;
+      gap: 6px;
+    }
+    #ext-menu-dropdown.open { display: flex; }
+
+    #downloads-flyout {
+      position: fixed;
+      bottom: 20px;
+      left: calc(var(--sidebar-width) + 16px);
+      width: 320px;
+      max-height: 380px;
+      background: #161616;
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7);
+      border-radius: 12px;
+      z-index: 10020;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #downloads-flyout.open { display: flex; }
+    .dl-flyout-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--surface-border);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .dl-flyout-list {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 8px;
+      gap: 6px;
+      max-height: 320px;
+    }
+
+    #viewport-container {
+      position: relative;
+      flex: 1;
+      margin: 0 10px 10px 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--surface-border);
+      overflow: hidden;
+      background: var(--bg);
+      transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1), margin-top 0.2s;
+      --split-pct: 50%;
+    }
+    body.fullscreen #viewport-container { margin: 10px; }
+    #viewport-container.pinned,
+    body.fullscreen #viewport-container.pinned {
+      margin-left: calc(var(--sidebar-width) + 20px) !important;
+    }
+
+    #split-control-pill {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(-82%);
+      background: rgba(22, 22, 22, 0.96);
+      border: 1px solid var(--surface-border);
+      border-top: none;
+      padding: 6px 14px 8px 14px;
+      border-radius: 0 0 14px 14px;
+      font-size: 11.5px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      z-index: 10005;
+      opacity: 0.35;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, box-shadow 0.2s ease;
+    }
+    #split-control-pill:hover {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), 0 0 16px var(--accent-glow);
+    }
+    .pill-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pill-btn:hover { color: #fff; }
+    .pill-btn.danger:hover { color: #f87171; }
+
+    #split-divider {
+      position: absolute;
+      top: 0;
+      left: var(--split-pct);
+      width: 8px;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      cursor: col-resize;
+      z-index: 10004;
+      display: none;
+      transform: translateX(-50%);
+      transition: background 0.15s;
+    }
+    #split-divider:hover, body.resizing-split #split-divider {
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    body.split-active #split-divider { display: block; }
+
+    #split-drag-shield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 99999;
+      cursor: col-resize;
+      display: none;
+    }
+    body.resizing-split #split-drag-shield { display: block; }
+    body.resizing-split .browser-webview { pointer-events: none !important; }
+
+    #loading-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 2.5px;
+      width: 0%;
+      background: linear-gradient(90deg, #4f46e5, #ec4899);
+      box-shadow: 0 0 10px var(--accent);
+      z-index: 20;
+      transition: width 0.25s, opacity 0.3s;
+      opacity: 0;
+    }
+
+    #webviews-container { position: relative; width: 100%; height: 100%; }
+    .browser-webview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: none !important;
+      pointer-events: none;
+      transition: box-shadow 0.2s ease;
+    }
+    .browser-webview.active {
+      display: flex !important;
+      visibility: visible;
+      pointer-events: auto;
+      z-index: 2;
+    }
+    body:not(.split-active) .browser-webview.active-primary,
+    body:not(.split-active) .browser-webview.active-secondary {
+      width: 100% !important;
+      left: 0 !important;
+    }
+
+    body.split-active .browser-webview.active-primary,
+    body.split-active .browser-webview.active-secondary {
+      display: flex !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    body.split-active .browser-webview.active-primary {
+      width: var(--split-pct) !important;
+      left: 0 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      z-index: 3;
+    }
+    body.split-active .browser-webview.active-secondary {
+      width: calc(100% - var(--split-pct)) !important;
+      left: var(--split-pct) !important;
+      border-left: 1px solid var(--surface-border);
+      visibility: visible !important;
+      pointer-events: auto !important;
+      z-index: 3;
+    }
+    body.split-active .browser-webview.focused-pane {
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    body.split-active #split-control-pill { display: flex; }
+
+    #find-widget {
+      position: absolute;
+      top: 14px;
+      right: 20px;
+      background: rgba(22, 22, 22, 0.95);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+      border-radius: 9px;
+      display: none;
+      align-items: center;
+      padding: 4px 10px;
+      gap: 8px;
+      z-index: 10005;
+    }
+    #find-widget.open { display: flex; }
+    #find-input { background: transparent; border: none; outline: none; color: #fff; font-size: 12.5px; width: 150px; }
+    #find-matches { font-size: 11px; color: var(--text-muted); min-width: 40px; text-align: center; }
+    .find-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .find-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    #scratchpad-drawer {
+      position: fixed;
+      top: 36px;
+      right: -340px;
+      width: 320px;
+      height: calc(100% - 46px);
+      background: #1a1a1a;
+      backdrop-filter: blur(28px);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius) 0 0 var(--radius);
+      box-shadow: -12px 0 36px rgba(0, 0, 0, 0.75);
+      z-index: 10020;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1), top 0.2s, height 0.2s;
+    }
+    body.fullscreen #scratchpad-drawer { top: 12px; height: calc(100% - 24px); }
+    #scratchpad-drawer.open { right: 0; }
+    .scratchpad-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--surface-border); }
+    .scratchpad-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); }
+    #scratchpad-textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: none;
+    }
+
+    #home-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+    #home-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    #wallpaper-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; overflow: hidden; }
+    #wallpaper-img, #wallpaper-video { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .wallpaper-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(11, 11, 11, 0.45) 0%, rgba(11, 11, 11, 0.8) 100%);
+    }
+
+    .home-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; gap: 16px; }
+    .home-logo-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 18px;
+      margin-bottom: 6px;
+      box-shadow: 0 0 32px var(--accent-glow);
+      object-fit: cover;
+    }
+    .home-brand { font-size: 34px; font-weight: 300; letter-spacing: 0.38em; text-transform: uppercase; }
+    .home-search-box { width: min(560px, 85%); position: relative; }
+    .home-search-box input {
+      width: 100%;
+      background: rgba(28, 28, 28, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(20px);
+      padding: 15px 24px;
+      border-radius: 30px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+      transition: all 0.2s;
+    }
+    .home-search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    /* Command Palette Dialog */
+    #command-palette-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      z-index: 20000;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 14vh;
+    }
+    #command-palette-backdrop.open { display: flex; }
+    .palette-box {
+      width: min(580px, 90vw);
+      background: rgba(22, 22, 22, 0.96);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 20px var(--accent-glow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .palette-input-row { display: flex; align-items: center; padding: 14px 18px; gap: 12px; border-bottom: 1px solid var(--surface-border); }
+    .palette-input-row input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; }
+    .palette-results { max-height: 340px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 3px; }
+    .palette-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--text-muted); }
+    .palette-item:hover, .palette-item.selected { background: rgba(99, 102, 241, 0.2); color: #fff; }
+    .palette-tag { font-size: 10.5px; background: rgba(255, 255, 255, 0.08); padding: 2px 7px; border-radius: 5px; color: #a5b4fc; }
+
+    #download-shelf {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10006;
+      max-width: 320px;
+      pointer-events: none;
+    }
+    .shelf-header-bar { display: flex; justify-content: flex-end; pointer-events: auto; margin-bottom: 2px; }
+    .shelf-btn {
+      background: rgba(22, 22, 22, 0.85);
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      font-size: 11px;
+      padding: 3px 8px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: all 0.15s;
+    }
+    .shelf-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+    .download-card {
+      background: rgba(20, 20, 20, 0.95);
+      border: 1px solid var(--surface-border);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: auto;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .download-card.hidden-card { display: none !important; }
+    .dl-header { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 500; }
+    .dl-name { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dl-bar-bg { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden; }
+    .dl-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.15s; }
+    .dl-footer { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); }
+    .dl-btn-group { display: flex; gap: 6px; align-items: center; }
+    .dl-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; padding: 2px 5px; border-radius: 4px; }
+    .dl-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+    /* Settings Overlay Screen */
+    #settings-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10010;
+      background: #0b0b0b;
+      display: none;
+      flex-direction: row;
+      overflow: hidden;
+    }
+    #settings-screen.active { display: flex; }
+    .settings-sidebar {
+      width: 220px;
+      background: rgba(18, 18, 18, 0.95);
+      border-right: 1px solid var(--surface-border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .settings-sidebar h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; padding-left: 8px; }
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      text-align: left;
+    }
+    .settings-nav-item.active { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; font-weight: 500; }
+    .settings-content-area { flex: 1; padding: 36px 48px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; }
+    .settings-content-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--surface-border); }
+    .settings-panel-section { display: none; flex-direction: column; gap: 16px; max-width: 680px; }
+    .settings-panel-section.active { display: flex; }
+    .setting-card { background: rgba(23, 23, 23, 0.6); border: 1px solid var(--surface-border); border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+    .setting-card-row { display: flex; justify-content: space-between; align-items: center; }
+    .ext-grid { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .ext-card { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--surface-border); }
+    .ext-left { display: flex; align-items: center; gap: 12px; }
+    .ext-left img { width: 28px; height: 28px; border-radius: 6px; }
+    select, .action-btn { background: #232323; border: 1px solid var(--surface-border); color: #fff; padding: 8px 14px; border-radius: 7px; cursor: pointer; font-size: 13px; outline: none; }
+    .action-btn.danger:hover { background: #e11d48; }
+  </style>
+</head>
+<body>
+
+  <div id="split-drag-shield"></div>
+  <div id="link-hover-chip"></div>
+
+  <header id="titlebar">
+    <div class="window-controls">
+      <button class="win-btn" id="min-btn" title="Minimize"><svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+      <button class="win-btn" id="max-btn" title="Maximize / Restore"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg></button>
+      <button class="win-btn close" id="close-btn" title="Close"><svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+  </header>
+
+  <div id="edge-hover-zone"></div>
+  <div id="sidebar-pill-trigger" title="Hover or click to open sidebar"></div>
+
+  <div id="sidebar-wrapper">
+    <nav id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-tag">
+          <img src="icon.jpg" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" alt="Silence" />
+          <span class="brand-dot" style="display:none;"></span>
+          <span>Silence</span>
+        </div>
+        <div class="header-right-actions">
+          <div id="fullscreen-window-controls">
+            <button class="win-btn" id="fs-min-btn" title="Minimize"><svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+            <button class="win-btn" id="fs-restore-btn" title="Exit Fullscreen"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg></button>
+            <button class="win-btn close" id="fs-close-btn" title="Close"><svg width="12" height="12" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+          </div>
+          <button class="icon-btn" id="pin-btn" title="Pin Dock"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg></button>
+        </div>
+      </div>
+
+      <div class="nav-bar-container">
+        <div class="nav-bar">
+          <button class="icon-btn" id="back-btn" title="Back" style="width:22px; height:22px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button class="icon-btn" id="forward-btn" title="Forward" style="width:22px; height:22px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg></button>
+          <input type="text" id="url-bar" placeholder="Search Google or enter address" spellcheck="false" autocomplete="off" />
+          <button class="icon-btn" id="reader-btn" title="Toggle Reader Mode" style="width:22px; height:22px; display:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg></button>
+          <button class="icon-btn" id="pip-btn" title="Picture in Picture Video" style="width:22px; height:22px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><rect x="12" y="11" width="8" height="7" rx="1"></rect></svg></button>
+          <button id="cws-install-btn">＋ Add</button>
+          <div id="extension-toolbar-icons"></div>
+          <button class="icon-btn" id="ext-menu-btn" title="Extensions" style="width:22px; height:22px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5a2.5 2.5 0 0 0-5 0V5H4a2 2 0 0 0-2 2v3.8h1.5a2.5 2.5 0 0 1 0 5H2V20a2 2 0 0 0 2 2h3.8v-1.5a2.5 2.5 0 0 1 5 0V22H17a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 0 0 0-5z"></path></svg></button>
+          <button class="icon-btn" id="reload-btn" title="Reload" style="width:22px; height:22px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg></button>
+        </div>
+        <div id="omnibox-dropdown">
+          <div id="omnibox-suggestions-list"></div>
+          <div class="suggest-bangs">
+            <span class="bang-tag" data-bang="!g">!g Google</span>
+            <span class="bang-tag" data-bang="!yt">!yt YouTube</span>
+            <span class="bang-tag" data-bang="!w">!w Wiki</span>
+            <span class="bang-tag" data-bang="!pdf">!pdf Document</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs-scroll-area">
+        <div class="section-header"><span>Saved Workspace</span></div>
+        <div class="tab-group" id="saved-tabs-list"></div>
+
+        <div class="section-header" style="margin-top: 6px;">
+          <span>Open Tabs</span>
+          <div style="display:flex; gap:2px;">
+            <button class="icon-btn" id="split-toggle-btn" title="Split Screen (Ctrl+Shift+S)" style="width:20px; height:20px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg></button>
+            <button class="icon-btn" id="new-tab-btn" title="New Tab" style="width:20px; height:20px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+          </div>
+        </div>
+        <div class="tab-group" id="open-tabs-list"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="footer-left">
+          <button class="icon-btn" id="home-btn" title="Silence Home"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></button>
+          <button class="icon-btn" id="palette-open-btn" title="Command Palette (Ctrl+K)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+          <button class="icon-btn" id="downloads-toggle-btn" title="Downloads"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><div id="dl-indicator-dot"></div></button>
+          <button class="icon-btn" id="dark-mode-btn" title="Force Dark Mode (Ctrl+Shift+D)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button>
+          <button class="icon-btn" id="scratchpad-btn" title="Quick Scratchpad (Ctrl+Shift+N)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+          <button class="icon-btn" id="fullscreen-btn" title="Toggle Fullscreen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+          <button class="icon-btn" id="settings-toggle-btn" title="Settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <div id="ext-popup-bubble"><webview id="ext-popup-webview"></webview></div>
+  <div id="ext-menu-dropdown"></div>
+
+  <div id="downloads-flyout">
+    <div class="dl-flyout-header">
+      <span>Downloads History</span>
+      <button class="action-btn" id="clear-dl-btn" style="padding:4px 8px; font-size:11px;">Clear</button>
+    </div>
+    <div class="dl-flyout-list" id="dl-flyout-list"></div>
+  </div>
+
+  <div id="command-palette-backdrop">
+    <div class="palette-box">
+      <div class="palette-input-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="palette-input" placeholder="Search tabs, actions, or open media files..." autofocus />
+      </div>
+      <div class="palette-results" id="palette-results"></div>
+    </div>
+  </div>
+
+  <div id="scratchpad-drawer">
+    <div class="scratchpad-header">
+      <span class="scratchpad-title">Quick Scratchpad</span>
+      <button class="find-btn" id="scratchpad-close-btn">✕</button>
+    </div>
+    <textarea id="scratchpad-textarea" placeholder="Drop quick notes, ideas, code snippets, or links here..."></textarea>
+  </div>
+
+  <div id="find-widget">
+    <input type="text" id="find-input" placeholder="Find in page..." />
+    <span id="find-matches">0/0</span>
+    <button class="find-btn" id="find-prev-btn" title="Previous match">▲</button>
+    <button class="find-btn" id="find-next-btn" title="Next match">▼</button>
+    <button class="find-btn" id="find-close-btn" title="Close">✕</button>
+  </div>
+
+  <div id="download-shelf"></div>
+
+  <div id="reader-overlay">
+    <div class="reader-toolbar">
+      <button class="pill-btn" id="reader-font-minus" title="Decrease Font">A-</button>
+      <button class="pill-btn" id="reader-font-plus" title="Increase Font">A+</button>
+      <span>|</span>
+      <button class="pill-btn" id="reader-theme-dark">Dark</button>
+      <button class="pill-btn" id="reader-theme-sepia">Sepia</button>
+      <button class="pill-btn" id="reader-theme-light">Light</button>
+      <span>|</span>
+      <button class="pill-btn danger" id="reader-close-btn">✕ Exit Reader</button>
+    </div>
+    <div class="reader-container">
+      <h1 id="reader-title">Loading article...</h1>
+      <div class="reader-meta">
+        <span id="reader-reading-time">1 min read</span>
+        <span>•</span>
+        <span id="reader-words">0 words</span>
+      </div>
+      <div class="reader-content" id="reader-content-body"></div>
+    </div>
+  </div>
+
+  <main id="viewport-container">
+    <div id="loading-bar"></div>
+    <div id="split-divider"></div>
+
+    <div id="file-drop-overlay">
+      <div class="file-drop-modal">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Drop file to open in Silence</span>
+      </div>
+    </div>
+
+    <div id="split-control-pill">
+      <button class="pill-btn" id="split-swap-btn">⇄ Swap Panes</button>
+      <span>|</span>
+      <button class="pill-btn danger" id="split-exit-btn">✕ Exit Split</button>
+    </div>
+
+    <!-- Floating New Tab Request Prompt Menu -->
+    <div id="new-tab-prompt">
+      <div class="ntp-content">
+        <div class="ntp-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </div>
+        <div class="ntp-text">
+          <div class="ntp-label">New tab requested</div>
+          <div class="ntp-domain" id="ntp-domain-text">example.com</div>
+        </div>
+      </div>
+      <div class="ntp-actions">
+        <button class="ntp-btn primary" id="ntp-go-btn" title="Open and switch to tab">Go to Tab</button>
+        <button class="ntp-btn secondary" id="ntp-bg-btn" title="Open in background">Open in Background</button>
+        <button class="ntp-btn dismiss" id="ntp-dismiss-btn" title="Dismiss / Don't open">✕</button>
+      </div>
+    </div>
+
+    <div id="zoom-indicator-pill">
+      <button class="zoom-btn" id="zoom-out-btn">-</button>
+      <span id="zoom-factor-label">100%</span>
+      <button class="zoom-btn" id="zoom-in-btn">+</button>
+      <button class="zoom-btn" id="zoom-reset-btn">Reset</button>
+    </div>
+
+    <div id="edge-bubble-left" class="edge-overscroll-bubble">
+      <svg class="edge-bubble-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+    </div>
+    <div id="edge-bubble-right" class="edge-overscroll-bubble">
+      <svg class="edge-bubble-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+
+    <!-- Home Dashboard Screen -->
+    <div id="home-screen">
+      <div id="wallpaper-container">
+        <img id="wallpaper-img" alt="" />
+        <video id="wallpaper-video" autoplay loop muted playsinline></video>
+        <div class="wallpaper-overlay"></div>
+      </div>
+      <div class="home-content">
+        <img src="icon.jpg" class="home-logo-icon" onerror="this.style.display='none'" alt="Silence" />
+        <h1 class="home-brand">Silence</h1>
+        <div class="home-search-box">
+          <input type="text" id="home-input" placeholder="Search Google or enter address" autofocus autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Overlay Screen -->
+    <div id="settings-screen">
+      <div class="settings-sidebar">
+        <h3>Settings</h3>
+        <button class="settings-nav-item active" data-target="panel-appearance"><span>🎨</span> Appearance</button>
+        <button class="settings-nav-item" data-target="panel-gestures"><span>🖐️</span> Gestures</button>
+        <button class="settings-nav-item" data-target="panel-performance"><span>⚡</span> Performance</button>
+        <button class="settings-nav-item" data-target="panel-privacy"><span>🛡️</span> Privacy & Ads</button>
+        <button class="settings-nav-item" data-target="panel-extensions"><span>🧩</span> Extensions</button>
+      </div>
+
+      <div class="settings-content-area">
+        <div class="settings-content-header">
+          <h2 id="settings-panel-title">Appearance</h2>
+          <button class="action-btn" id="settings-close-btn">Done</button>
+        </div>
+
+        <div class="settings-panel-section active" id="panel-appearance">
+          <div class="setting-card">
+            <h4>Search Engine</h4>
+            <p>Select which search engine query template is used when searching.</p>
+            <select id="engine-select">
+              <option value="https://www.google.com/search?q=">Google</option>
+              <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+              <option value="https://www.bing.com/search?q=">Bing</option>
+            </select>
+          </div>
+
+          <div class="setting-card">
+            <h4>Background Wallpaper</h4>
+            <p>Choose any local static image, animated GIF, or looping MP4 video.</p>
+            <div style="display:flex; gap:8px;">
+              <input type="file" id="wallpaper-file-input" accept="image/*,video/mp4,video/webm" style="display:none;" />
+              <button class="action-btn" onclick="document.getElementById('wallpaper-file-input').click()">Choose File...</button>
+              <button class="action-btn" id="clear-wallpaper-btn">Remove Custom Wallpaper</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-panel-section" id="panel-gestures">
+          <div class="setting-card">
+            <h4>Interactive Gesture Remapper</h4>
+            <p>Customize what action each right-click mouse stroke executes.</p>
+            <div id="gesture-remapper-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+
+          <div class="setting-card">
+            <h4>Practice Gesture Drawing</h4>
+            <p>Hold right-click inside the box below to test your gestures:</p>
+            <canvas id="gesture-test-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="settings-panel-section" id="panel-performance">
+          <div class="setting-card">
+            <div class="setting-card-row">
+              <div>
+                <h4>Aggressive Tab Sleeping (4GB RAM Profile)</h4>
+                <p>Suspends background tabs after 5 minutes of inactivity to keep RAM usage low.</p>
+              </div>
+              <input type="checkbox" id="tab-sleep-checkbox" checked style="width:18px; height:18px; accent-color:var(--accent);" />
+            </div>
+            <div class="setting-card-row" style="margin-top: 10px; border-top: 1px solid var(--surface-border); padding-top: 12px;">
+              <div>
+                <h4>Purge RAM & Disk Cache</h4>
+                <p>Clears idle Chromium memory caches and releases working-set memory back to the OS.</p>
+              </div>
+              <button class="action-btn" id="purge-ram-btn">⚡ Free RAM Now</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-panel-section" id="panel-privacy">
+          <div class="setting-card">
+            <div class="setting-card-row">
+              <div>
+                <h4>Built-in Ad & Tracker Blocker</h4>
+                <p>Blocks invasive advertising networks, pop-ups, and trackers.</p>
+              </div>
+              <span style="color:var(--accent); font-weight:600;">Active</span>
+            </div>
+          </div>
+          <div class="setting-card">
+            <div class="setting-card-row">
+              <div>
+                <h4>Ask before opening links in a new tab</h4>
+                <p>Off by default: like Chrome, a link opens in a new tab straight away. Turn this on to get a confirmation pill first.</p>
+              </div>
+              <input type="checkbox" id="ask-newtab-checkbox" style="width:18px; height:18px; accent-color:var(--accent);" />
+            </div>
+            <div class="setting-card-row" style="margin-top: 10px; border-top: 1px solid var(--surface-border); padding-top: 12px;">
+              <div>
+                <h4>Fix embedded sign-in cookies</h4>
+                <p>Lets Google, Microsoft and other sign-in frames keep their cookies inside an embedded frame. Only those providers are relaxed — everything else keeps Chromium's CSRF protection.</p>
+              </div>
+              <input type="checkbox" id="cookie-fix-checkbox" checked style="width:18px; height:18px; accent-color:var(--accent);" />
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-panel-section" id="panel-extensions">
+          <div class="setting-card">
+            <div class="setting-card-row">
+              <div>
+                <h4>Installed Extensions</h4>
+                <p>Install extensions with 1 click from Chrome Web Store or load an unpacked folder.</p>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="action-btn" id="open-ext-store-btn">Open Extension Store</button>
+                <button class="action-btn" id="load-ext-btn">+ Load Unpacked Folder</button>
+              </div>
+            </div>
+            <div class="ext-grid" id="extensions-manager-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Webviews Container -->
+    <div id="webviews-container"></div>
+  </main>
+
+  <script>
+    /* The browser chrome runs with Node access, so a page-supplied string must
+     * never reach innerHTML unescaped.  Page titles and download filenames are
+     * attacker-controlled: a filename of <img src=x onerror=...> would run
+     * with full filesystem rights.
+     */
+    function escHtml(v) {
+      return String(v == null ? '' : v)
+        .split('&').join('&amp;')
+        .split('<').join('&lt;')
+        .split('>').join('&gt;')
+        .split('"').join('&quot;')
+        .split(String.fromCharCode(39)).join('&#39;');
+    }
+
+    /* Only real images are accepted as a page favicon. */
+    function isSafeIconUrl(u) {
+      if (typeof u !== 'string') return false;
+      if (/^https?:\/\//i.test(u)) return true;
+      return /^data:image\/(png|jpe?g|gif|webp|svg\+xml|x-icon);base64,/i.test(u);
+    }
+
+    const { ipcRenderer } = require('electron');
+    const path = require('path');
+
+
+    const sidebarWrapper = document.getElementById('sidebar-wrapper');
+    const edgeHoverZone = document.getElementById('edge-hover-zone');
+    const pillTrigger = document.getElementById('sidebar-pill-trigger');
+    const pinBtn = document.getElementById('pin-btn');
+    const viewport = document.getElementById('viewport-container');
+    const homeScreen = document.getElementById('home-screen');
+    const homeInput = document.getElementById('home-input');
+    const urlBar = document.getElementById('url-bar');
+    const cwsInstallBtn = document.getElementById('cws-install-btn');
+    const loadingBar = document.getElementById('loading-bar');
+    const webviewsContainer = document.getElementById('webviews-container');
+    const openTabsList = document.getElementById('open-tabs-list');
+    const savedTabsList = document.getElementById('saved-tabs-list');
+
+    const bubbleLeft = document.getElementById('edge-bubble-left');
+    const bubbleRight = document.getElementById('edge-bubble-right');
+    const linkHoverChip = document.getElementById('link-hover-chip');
+
+    const zoomPill = document.getElementById('zoom-indicator-pill');
+    const zoomLabel = document.getElementById('zoom-factor-label');
+    const readerBtn = document.getElementById('reader-btn');
+    const pipBtn = document.getElementById('pip-btn');
+    const darkModeBtn = document.getElementById('dark-mode-btn');
+
+    const readerOverlay = document.getElementById('reader-overlay');
+    const readerTitle = document.getElementById('reader-title');
+    const readerContent = document.getElementById('reader-content-body');
+    const readerWords = document.getElementById('reader-words');
+    const readerTime = document.getElementById('reader-reading-time');
+    const readerCloseBtn = document.getElementById('reader-close-btn');
+
+    const omniboxDropdown = document.getElementById('omnibox-dropdown');
+    const omniboxSuggestList = document.getElementById('omnibox-suggestions-list');
+
+    const wpImg = document.getElementById('wallpaper-img');
+    const wpVideo = document.getElementById('wallpaper-video');
+    const wpFileInput = document.getElementById('wallpaper-file-input');
+    const clearWpBtn = document.getElementById('clear-wallpaper-btn');
+    const engineSelect = document.getElementById('engine-select');
+
+    const openStoreBtn = document.getElementById('open-ext-store-btn');
+    if (openStoreBtn) openStoreBtn.onclick = () => createTab('silence://store', false, null, 'Extension Store', true);
+
+    const loadUnpackedBtn = document.getElementById('load-ext-btn');
+    if (loadUnpackedBtn) loadUnpackedBtn.onclick = async () => {
+      const res = await ipcRenderer.invoke('load-extension-dialog');
+      if (res && res.success) await loadExtensionsUI();
+      else if (res && res.error) console.warn('Unpacked load failed:', res.error);
+    };
+
+    ipcRenderer.on('silence-store:changed', () => { loadExtensionsUI(); });
+
+    const extToolbar = document.getElementById('extension-toolbar-icons');
+    const extMenuBtn = document.getElementById('ext-menu-btn');
+    const extMenuDropdown = document.getElementById('ext-menu-dropdown');
+    const extPopupBubble = document.getElementById('ext-popup-bubble');
+    const extPopupWebview = document.getElementById('ext-popup-webview');
+
+    const splitToggleBtn = document.getElementById('split-toggle-btn');
+    const splitControlPill = document.getElementById('split-control-pill');
+    const splitSwapBtn = document.getElementById('split-swap-btn');
+    const splitExitBtn = document.getElementById('split-exit-btn');
+    const splitDivider = document.getElementById('split-divider');
+
+    const newTabPrompt = document.getElementById('new-tab-prompt');
+    const ntpDomainText = document.getElementById('ntp-domain-text');
+    const ntpGoBtn = document.getElementById('ntp-go-btn');
+    const ntpBgBtn = document.getElementById('ntp-bg-btn');
+    const ntpDismissBtn = document.getElementById('ntp-dismiss-btn');
+
+    let pendingPromptUrl = null;
+    let promptDismissTimer = null;
+
+    function showNewTabPrompt(targetUrl) {
+      if (!targetUrl) return;
+      pendingPromptUrl = targetUrl;
+
+      let displayDomain = targetUrl;
+      try {
+        const u = new URL(targetUrl);
+        displayDomain = u.hostname + (u.pathname !== '/' && u.pathname.length < 24 ? u.pathname : '');
+      } catch (e) {}
+
+      ntpDomainText.innerText = displayDomain;
+      ntpDomainText.title = targetUrl;
+      newTabPrompt.classList.add('visible');
+
+      clearTimeout(promptDismissTimer);
+      promptDismissTimer = setTimeout(() => {
+        hideNewTabPrompt();
+      }, 10000);
+    }
+
+    function hideNewTabPrompt() {
+      newTabPrompt.classList.remove('visible');
+      pendingPromptUrl = null;
+      clearTimeout(promptDismissTimer);
+    }
+
+    ntpGoBtn.onclick = () => {
+      if (pendingPromptUrl) {
+        createTab(pendingPromptUrl, false, null, null, true);
+      }
+      hideNewTabPrompt();
+    };
+
+    ntpBgBtn.onclick = () => {
+      if (pendingPromptUrl) {
+        createTab(pendingPromptUrl, false, null, null, false);
+      }
+      hideNewTabPrompt();
+    };
+
+    ntpDismissBtn.onclick = () => {
+      hideNewTabPrompt();
+    };
+
+    ipcRenderer.on('request-new-tab-prompt', (e, data) => {
+      const targetUrl = (typeof data === 'object' && data.url) ? data.url : data;
+      showNewTabPrompt(targetUrl);
+    });
+
+    const findWidget = document.getElementById('find-widget');
+    const findInput = document.getElementById('find-input');
+    const findMatches = document.getElementById('find-matches');
+
+    const scratchpadDrawer = document.getElementById('scratchpad-drawer');
+    const scratchpadTextarea = document.getElementById('scratchpad-textarea');
+    const scratchpadBtn = document.getElementById('scratchpad-btn');
+    const scratchpadCloseBtn = document.getElementById('scratchpad-close-btn');
+
+    const paletteBackdrop = document.getElementById('command-palette-backdrop');
+    const paletteInput = document.getElementById('palette-input');
+    const paletteResults = document.getElementById('palette-results');
+    const downloadShelf = document.getElementById('download-shelf');
+    const downloadsToggleBtn = document.getElementById('downloads-toggle-btn');
+    const downloadsFlyout = document.getElementById('downloads-flyout');
+    const dlFlyoutList = document.getElementById('dl-flyout-list');
+    const dlIndicatorDot = document.getElementById('dl-indicator-dot');
+    const settingsScreen = document.getElementById('settings-screen');
+    const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+    const preloadScriptPath = 'file:///' + path.resolve(__dirname, 'gesture-preload.js').replace(/\\/g, '/');
+    const storePreloadPath = 'file:///' + path.resolve(__dirname, 'store-preload.js').replace(/\\/g, '/');
+
+    function setFullscreenUI(isFS) {
+      document.body.classList.toggle('fullscreen', isFS);
+      if (fullscreenBtn) fullscreenBtn.classList.toggle('active', isFS);
+    }
+
+    ipcRenderer.on('fullscreen-state', (e, isFS) => setFullscreenUI(isFS));
+    /* A page went fullscreen (Slides / PowerPoint / Canva "Present",
+     * YouTube's fullscreen button).  Stretch that webview over the whole
+     * window and show Chrome's "press Esc" hint. */
+    ipcRenderer.on('html-fullscreen', (e, data) => {
+      const id = data && data.id;
+      const on = !!(data && data.on);
+      let target = null;
+      try {
+        const match = tabs.find((x) => x.webview && x.webview.getWebContentsId && x.webview.getWebContentsId() === id);
+        if (match) target = match.webview;
+      } catch (err) {}
+      if (!target) {
+        const active = tabs.find((x) => x.id === activeTabId);
+        target = active && active.webview;
+      }
+      if (!target) return;
+      target.classList.toggle('html-fullscreen', on);
+      document.body.classList.toggle('html-fs-active', on);
+      let hint = document.getElementById('html-fs-hint');
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.id = 'html-fs-hint';
+        hint.textContent = 'Press Esc to exit full screen';
+        document.body.appendChild(hint);
+      }
+      hint.classList.toggle('visible', on);
+    });
+
+
+    if (fullscreenBtn) {
+      fullscreenBtn.onclick = (e) => {
+        e.stopPropagation();
+        const nextFS = !document.body.classList.contains('fullscreen');
+        setFullscreenUI(nextFS);
+        try { ipcRenderer.send('window-fullscreen-toggle'); } catch (err) {}
+      };
+    }
+
+    document.getElementById('fs-min-btn').onclick = () => ipcRenderer.send('window-min');
+    document.getElementById('fs-restore-btn').onclick = () => {
+      setFullscreenUI(false);
+      try { ipcRenderer.send('window-fullscreen-toggle'); } catch (err) {}
+    };
+    document.getElementById('fs-close-btn').onclick = () => ipcRenderer.send('window-close');
+    document.getElementById('min-btn').onclick = () => ipcRenderer.send('window-min');
+    document.getElementById('max-btn').onclick = () => ipcRenderer.send('window-max');
+    document.getElementById('close-btn').onclick = () => ipcRenderer.send('window-close');
+
+    let isPinned = localStorage.getItem('silence_sidebar_pinned') === 'true';
+    function updatePinUI() {
+      sidebarWrapper.classList.toggle('pinned', isPinned);
+      viewport.classList.toggle('pinned', isPinned);
+      pinBtn.classList.toggle('active', isPinned);
+      pillTrigger.style.display = isPinned ? 'none' : 'block';
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 260);
+    }
+    updatePinUI();
+    pinBtn.addEventListener('click', () => {
+      isPinned = !isPinned;
+      localStorage.setItem('silence_sidebar_pinned', isPinned);
+      updatePinUI();
+    });
+
+    let searchEngine = localStorage.getItem('silence_search_engine') || 'https://www.google.com/search?q=';
+    if (engineSelect) engineSelect.value = searchEngine;
+
+    const transparentScrollbarCSS = `
+      ::-webkit-scrollbar { width: 8px !important; height: 8px !important; background: transparent !important; }
+      ::-webkit-scrollbar-track { background: transparent !important; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 140, 0.3) !important;
+        border-radius: 999px !important;
+        border: 2px solid transparent !important;
+        background-clip: padding-box !important;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 140, 0.65) !important; }
+    `;
+
+    function applyAccentColor(color) {
+      if (!color) {
+        document.documentElement.style.setProperty('--accent', '#6366f1');
+        document.documentElement.style.setProperty('--accent-glow', 'rgba(99, 102, 241, 0.35)');
+        return;
+      }
+      document.documentElement.style.setProperty('--accent', color);
+      document.documentElement.style.setProperty('--accent-glow', color + '55');
+    }
+
+    let suggestDebounceTimer = null;
+    let suggestAbortController = null;
+
+    async function fetchSearchSuggestions(query) {
+      if (!query || query.trim().length < 1) {
+        omniboxDropdown.classList.remove('open');
+        return;
+      }
+      if (suggestAbortController) suggestAbortController.abort();
+      suggestAbortController = new AbortController();
+
+      try {
+        const res = await fetch(`https://duckduckgo.com/ac/?q=${encodeURIComponent(query)}&type=list`, {
+          signal: suggestAbortController.signal
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const suggestions = data[1] || [];
+        renderSuggestions(suggestions, query);
+      } catch (e) {}
+    }
+
+    function renderSuggestions(list, query) {
+      omniboxSuggestList.innerHTML = '';
+      if (!list.length) {
+        omniboxDropdown.classList.remove('open');
+        return;
+      }
+
+      list.slice(0, 6).forEach((item) => {
+        const div = document.createElement('div');
+        div.className = 'suggest-item';
+        div.innerHTML = `<span>🔍 ${item}</span><span style="font-size:10px; color:#555;">Search</span>`;
+        div.onclick = () => {
+          navigateActiveTab(item);
+          omniboxDropdown.classList.remove('open');
+        };
+        omniboxSuggestList.appendChild(div);
+      });
+
+      omniboxDropdown.classList.add('open');
+    }
+
+    urlBar.addEventListener('input', () => {
+      clearTimeout(suggestDebounceTimer);
+      suggestDebounceTimer = setTimeout(() => fetchSearchSuggestions(urlBar.value), 140);
+    });
+
+    document.querySelectorAll('.bang-tag').forEach(tag => {
+      tag.onclick = (e) => {
+        e.stopPropagation();
+        const bang = tag.dataset.bang;
+        urlBar.value = bang + ' ';
+        urlBar.focus();
+      };
+    });
+
+    let isForceDarkMode = false;
+    function toggleForceDarkMode() {
+      isForceDarkMode = !isForceDarkMode;
+      if (darkModeBtn) darkModeBtn.classList.toggle('active', isForceDarkMode);
+      tabs.forEach(t => {
+        try {
+          if (t.webview) {
+            t.webview.send('toggle-force-dark-mode', isForceDarkMode);
+            t.webview.executeJavaScript(`
+              (() => {
+                let s = document.getElementById('silence-force-dark-mode-style');
+                if (${isForceDarkMode}) {
+                  if (!s) {
+                    s = document.createElement('style');
+                    s.id = 'silence-force-dark-mode-style';
+                    s.textContent = 'html { filter: invert(1) hue-rotate(180deg) contrast(0.92) !important; background: #131313 !important; } img, video, canvas, [style*="background-image"], svg:not(:root) { filter: invert(1) hue-rotate(180deg) !important; }';
+                    document.documentElement.appendChild(s);
+                  }
+                } else if (s) {
+                  s.remove();
+                }
+              })()
+            `).catch(() => {});
+          }
+        } catch (err) {}
+      });
+    }
+
+    if (darkModeBtn) {
+      darkModeBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleForceDarkMode();
+      };
+    }
+
+    function toggleScratchpad() {
+      const isOpen = !scratchpadDrawer.classList.contains('open');
+      scratchpadDrawer.classList.toggle('open', isOpen);
+      if (scratchpadBtn) scratchpadBtn.classList.toggle('active', isOpen);
+      if (isOpen) {
+        scratchpadTextarea.focus();
+        if (downloadsFlyout) downloadsFlyout.classList.remove('open');
+        if (downloadsToggleBtn) downloadsToggleBtn.classList.remove('active');
+        toggleSettings(false);
+      }
+    }
+
+    if (scratchpadBtn) {
+      scratchpadBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleScratchpad();
+      };
+    }
+    if (scratchpadCloseBtn) {
+      scratchpadCloseBtn.onclick = (e) => {
+        e.stopPropagation();
+        scratchpadDrawer.classList.remove('open');
+        if (scratchpadBtn) scratchpadBtn.classList.remove('active');
+      };
+    }
+
+    function openReaderMode() {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.webview) {
+        activeTab.webview.send('extract-reader-article');
+      }
+    }
+
+    readerBtn.onclick = openReaderMode;
+    readerCloseBtn.onclick = () => readerOverlay.classList.remove('open');
+
+    let readerFontSize = 17;
+    document.getElementById('reader-font-plus').onclick = () => {
+      readerFontSize = Math.min(26, readerFontSize + 1);
+      document.querySelector('.reader-container').style.fontSize = readerFontSize + 'px';
+    };
+    document.getElementById('reader-font-minus').onclick = () => {
+      readerFontSize = Math.max(13, readerFontSize - 1);
+      document.querySelector('.reader-container').style.fontSize = readerFontSize + 'px';
+    };
+
+    document.getElementById('reader-theme-dark').onclick = () => { readerOverlay.className = 'open'; };
+    document.getElementById('reader-theme-sepia').onclick = () => { readerOverlay.className = 'open theme-sepia'; };
+    document.getElementById('reader-theme-light').onclick = () => { readerOverlay.className = 'open theme-light'; };
+
+    pipBtn.onclick = () => {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.webview) activeTab.webview.send('toggle-pip');
+    };
+
+    let zoomHideTimer = null;
+    let currentZoomFactor = 1.0;
+
+    function showZoomPill(factor) {
+      currentZoomFactor = Math.round(factor * 100) / 100;
+      zoomLabel.innerText = Math.round(currentZoomFactor * 100) + '%';
+      zoomPill.classList.add('visible');
+      clearTimeout(zoomHideTimer);
+      zoomHideTimer = setTimeout(() => zoomPill.classList.remove('visible'), 2200);
+    }
+
+    document.getElementById('zoom-in-btn').onclick = () => adjustZoom(0.1);
+    document.getElementById('zoom-out-btn').onclick = () => adjustZoom(-0.1);
+    document.getElementById('zoom-reset-btn').onclick = () => {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab?.webview) {
+        activeTab.webview.setZoomFactor(1.0);
+        showZoomPill(1.0);
+      }
+    };
+
+    function adjustZoom(delta) {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab?.webview) {
+        currentZoomFactor = Math.max(0.4, Math.min(3.0, currentZoomFactor + delta));
+        activeTab.webview.setZoomFactor(currentZoomFactor);
+        showZoomPill(currentZoomFactor);
+      }
+    }
+
+    let isSplitMode = false;
+    let splitPrimaryTabId = null;
+    let splitSecondaryTabId = null;
+    let splitPercent = 50;
+    let isDraggingSplit = false;
+    let dragRafPending = false;
+
+    function toggleSplitView() {
+      if (isSplitMode) {
+        exitSplitView();
+        return;
+      }
+
+      splitPrimaryTabId = activeTabId || (tabs[0] ? tabs[0].id : null);
+      const primaryTab = tabs.find(t => t.id === splitPrimaryTabId);
+      if (primaryTab && (!primaryTab.url || primaryTab.url === 'about:blank')) {
+        primaryTab.url = searchEngine.includes('?') ? searchEngine.split('?')[0] : 'https://www.google.com';
+        primaryTab.webview.loadURL(primaryTab.url);
+      }
+
+      if (tabs.length < 2) {
+        const defaultUrl = searchEngine.includes('?') ? searchEngine.split('?')[0] : 'https://www.google.com';
+        const newT = createTab(defaultUrl, false, null, 'Google', false);
+        splitSecondaryTabId = newT.id;
+      } else {
+        const otherTab = tabs.find(t => t.id !== splitPrimaryTabId);
+        splitSecondaryTabId = otherTab ? otherTab.id : tabs[0].id;
+        if (otherTab && (!otherTab.url || otherTab.url === 'about:blank')) {
+          otherTab.url = 'https://www.google.com';
+          otherTab.webview.loadURL(otherTab.url);
+        }
+      }
+
+      activeTabId = splitPrimaryTabId;
+      isSplitMode = true;
+      document.body.classList.add('split-active');
+      renderSplitLayout();
+    }
+
+    function exitSplitView() {
+      isSplitMode = false;
+      document.body.classList.remove('split-active');
+      viewport.style.removeProperty('--split-pct');
+      tabs.forEach(t => t.webview.classList.remove('active-primary', 'active-secondary', 'focused-pane'));
+      splitPrimaryTabId = null;
+      splitSecondaryTabId = null;
+      switchTab(activeTabId);
+    }
+
+    function renderSplitLayout() {
+      if (!isSplitMode) return;
+
+      const primaryExists = tabs.some(t => t.id === splitPrimaryTabId);
+      const secondaryExists = tabs.some(t => t.id === splitSecondaryTabId);
+
+      if (!primaryExists || !secondaryExists) {
+        exitSplitView();
+        return;
+      }
+
+      viewport.style.setProperty('--split-pct', splitPercent + '%');
+
+      tabs.forEach(t => {
+        t.webview.classList.remove('active', 'active-primary', 'active-secondary', 'focused-pane');
+        if (t.id === splitPrimaryTabId) {
+          t.webview.classList.add('active-primary');
+          if (t.id === activeTabId) t.webview.classList.add('focused-pane');
+        } else if (t.id === splitSecondaryTabId) {
+          t.webview.classList.add('active-secondary');
+          if (t.id === activeTabId) t.webview.classList.add('focused-pane');
+        }
+      });
+
+      hideHomeOverlay();
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.url && !activeTab.url.startsWith('about:')) {
+        urlBar.value = activeTab.url;
+      }
+      renderTabs();
+    }
+
+    function setActiveSplitPane(tabId) {
+      if (isSplitMode && (tabId === splitPrimaryTabId || tabId === splitSecondaryTabId)) {
+        activeTabId = tabId;
+        tabs.forEach(t => t.webview.classList.toggle('focused-pane', t.id === activeTabId));
+        const current = tabs.find(t => t.id === activeTabId);
+        if (current && !current.url.startsWith('about:')) urlBar.value = current.url;
+        applyAccentColor(current?.themeColor);
+        renderTabs();
+      }
+    }
+
+    splitDivider.addEventListener('mousedown', () => {
+      isDraggingSplit = true;
+      document.body.classList.add('resizing-split');
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDraggingSplit) {
+        isDraggingSplit = false;
+        document.body.classList.remove('resizing-split');
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingSplit || !isSplitMode) return;
+      if (!dragRafPending) {
+        dragRafPending = true;
+        requestAnimationFrame(() => {
+          dragRafPending = false;
+          const rect = viewport.getBoundingClientRect();
+          const pct = Math.min(80, Math.max(20, ((e.clientX - rect.left) / rect.width) * 100));
+          splitPercent = pct;
+          viewport.style.setProperty('--split-pct', pct + '%');
+        });
+      }
+    });
+
+    splitToggleBtn.onclick = toggleSplitView;
+    splitExitBtn.onclick = exitSplitView;
+    splitSwapBtn.onclick = () => {
+      if (!isSplitMode) return;
+      const temp = splitPrimaryTabId;
+      splitPrimaryTabId = splitSecondaryTabId;
+      splitSecondaryTabId = temp;
+      renderSplitLayout();
+    };
+
+    let tabs = [];
+    let activeTabId = null;
+    let recentlyClosedTabs = [];
+    let swipeDismissTimer = null;
+    let swipeRafId = null;
+    let swipeState = { pending: null, canForward: false, checked: false };
+
+    function resetOverscrollBubbles() {
+      clearTimeout(swipeDismissTimer);
+      bubbleLeft.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease';
+      bubbleRight.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease';
+      bubbleLeft.style.transform = 'translateY(-50%) translateX(0px)';
+      bubbleRight.style.transform = 'translateY(-50%) translateX(0px)';
+      bubbleLeft.style.opacity = '0';
+      bubbleRight.style.opacity = '0';
+      bubbleLeft.classList.remove('ready');
+      bubbleRight.classList.remove('ready');
+      pillTrigger.style.opacity = '1';
+    }
+
+    function switchAdjacentTab(direction) {
+      if (tabs.length <= 1) return;
+      const currentIndex = tabs.findIndex(t => t.id === activeTabId);
+      if (currentIndex === -1) return;
+      const nextIndex = (currentIndex + direction + tabs.length) % tabs.length;
+      switchTab(tabs[nextIndex].id);
+    }
+
+    function saveSession() {
+      const savedWorkspaceTabs = tabs.filter(t => t.isSaved);
+      const sessionData = {
+        tabs: savedWorkspaceTabs.map(t => ({
+          id: t.id,
+          url: t.url,
+          title: t.title,
+          favicon: t.favicon,
+          isSaved: true
+        }))
+      };
+      localStorage.setItem('silence_saved_session', JSON.stringify(sessionData));
+    }
+
+    function createTab(url = '', isSaved = false, customId = null, initialTitle = null, activateTab = true) {
+      const id = customId || ('tab_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
+
+      const webview = document.createElement('webview');
+      webview.className = 'browser-webview';
+      webview.id = 'webview_' + id;
+      const isStorePage = /^silence:\/\//i.test(url || '') || /store\.html(\?|#|$)/i.test(url || '');
+      webview.setAttribute('preload', isStorePage ? storePreloadPath : preloadScriptPath);
+      webview.setAttribute('useragent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36');
+      webview.setAttribute('allowpopups', 'true');
+      webview.setAttribute('plugins', 'true');
+      webview.setAttribute('allowfullscreen', 'true');
+              webview.allowfullscreen = true;
+      webview.src = url || 'about:blank';
+      webviewsContainer.appendChild(webview);
+      webview.addEventListener('enter-html-full-screen', () => {
+        document.body.classList.add('html-fullscreen');
+        ipcRenderer.send('window-enter-fullscreen');
+      });
+
+      webview.addEventListener('leave-html-full-screen', () => {
+        document.body.classList.remove('html-fullscreen');
+        ipcRenderer.send('window-leave-fullscreen');
+      });
+
+      const tab = { 
+        id, 
+        url, 
+        title: initialTitle || (url ? 'Loading...' : 'New Tab'), 
+        favicon: null, 
+        isSaved, 
+        isAudible: false, 
+        isMuted: false, 
+        themeColor: null, 
+        webview,
+        lastActive: Date.now(),
+        isSleeping: false
+      };
+
+      webview.addEventListener('did-start-loading', () => {
+        if (activeTabId === id) {
+          loadingBar.style.opacity = '1';
+          loadingBar.style.width = '70%';
+        }
+      });
+
+      webview.addEventListener('did-stop-loading', () => {
+        if (activeTabId === id) {
+          loadingBar.style.width = '100%';
+          setTimeout(() => {
+            loadingBar.style.opacity = '0';
+            setTimeout(() => loadingBar.style.width = '0%', 300);
+          }, 200);
+        }
+      });
+
+      webview.addEventListener('dom-ready', () => {
+        webview.insertCSS(transparentScrollbarCSS);
+        if (isForceDarkMode) webview.send('toggle-force-dark-mode', true);
+        webview.send('sync-custom-gestures', customGestureConfig);
+      });
+
+      webview.addEventListener('media-started-playing', () => { tab.isAudible = true; renderTabs(); });
+      webview.addEventListener('media-paused', () => { tab.isAudible = false; renderTabs(); });
+
+      webview.addEventListener('found-in-page', (e) => {
+        if (activeTabId === id) {
+          findMatches.innerText = `${e.result.activeMatchOrdinal || 0}/${e.result.matches || 0}`;
+        }
+      });
+
+      webview.addEventListener('ipc-message', async (e) => {
+        if (e.channel === 'shortcut-close-tab') handleSafeCloseTab();
+        else if (e.channel === 'shortcut-open-palette') openCommandPalette();
+        else if (e.channel === 'shortcut-find-in-page') openFindWidget();
+        else if (e.channel === 'chrome-shortcut') { try { if (window.__silenceShortcut) window.__silenceShortcut(e.args[0]); } catch (err) {} }
+        else if (e.channel === 'pane-focused') setActiveSplitPane(id);
+        else if (e.channel === 'link-hover-status') {
+          const hoverUrl = e.args[0];
+          if (hoverUrl) {
+            linkHoverChip.innerText = hoverUrl;
+            linkHoverChip.classList.add('visible');
+          } else {
+            linkHoverChip.classList.remove('visible');
+          }
+        } else if (e.channel === 'page-zoom-change') {
+          adjustZoom(e.args[0]);
+        } else if (e.channel === 'open-dropped-file') {
+          const { path: fPath, name: fName } = e.args[0];
+          if (fPath) {
+            const fileUrl = 'file:///' + fPath.replace(/\\/g, '/');
+            createTab(fileUrl, false, null, fName, true);
+          }
+        } else if (e.channel === 'reader-article-data') {
+          const article = e.args[0];
+          if (article) {
+            readerTitle.innerText = article.title;
+            readerContent.innerHTML = article.contentHtml;
+            readerWords.innerText = `${article.wordCount} words`;
+            readerTime.innerText = `${article.readingTimeMin} min read`;
+            readerOverlay.classList.add('open');
+          }
+        } else if (e.channel === 'execute-gesture') {
+          const action = e.args[0];
+          if (action === 'back') navigateBack();
+          else if (action === 'forward') { if (webview.canGoForward()) webview.goForward(); }
+          else if (action === 'new-tab') createTab();
+          else if (action === 'restore-tab') {
+            const restored = recentlyClosedTabs.pop();
+            if (restored) createTab(restored.url, false, null, restored.title, true);
+          } else if (action === 'next-tab') switchAdjacentTab(1);
+          else if (action === 'prev-tab') switchAdjacentTab(-1);
+          else if (action === 'duplicate-tab') {
+            const current = tabs.find(t => t.id === activeTabId);
+            if (current && current.url && !current.url.startsWith('about:')) {
+              createTab(current.url, false, null, current.title, true);
+            }
+          } else if (action === 'toggle-split') toggleSplitView();
+          else if (action === 'go-home') showHomeOverlay();
+          else if (action === 'reader-mode') openReaderMode();
+          else if (action === 'dark-mode') toggleForceDarkMode();
+          else if (action === 'toggle-pip') webview.send('toggle-pip');
+        } else if (e.channel === 'edge-swipe-progress') {
+          // coalesce to one DOM update per frame — trackpads fire 60-120 events/s
+          swipeState.pending = e.args[0];
+          if (!swipeRafId) {
+            swipeRafId = requestAnimationFrame(() => {
+              swipeRafId = null;
+              const p = swipeState.pending;
+              if (!p) return;
+              swipeState.pending = null;
+
+              const activeTab = tabs.find(t => t.id === activeTabId);
+              if (!activeTab || !activeTab.webview) return;
+
+              // canGoForward() is an IPC round-trip — check once per swipe, not per event
+              if (p.direction === 'forward') {
+                if (!swipeState.checked) {
+                  swipeState.checked = true;
+                  swipeState.canForward = activeTab.webview.canGoForward();
+                }
+                if (!swipeState.canForward) { resetOverscrollBubbles(); return; }
+              }
+
+              const targetBubble = p.direction === 'back' ? bubbleLeft : bubbleRight;
+              const otherBubble = p.direction === 'back' ? bubbleRight : bubbleLeft;
+              otherBubble.style.opacity = '0';
+              if (p.direction === 'back') pillTrigger.style.opacity = '0';
+
+              const maxTravel = 108;
+              const displacement = maxTravel * (1 - Math.pow(1 - p.progress, 2));
+              const shift = p.direction === 'back' ? displacement : -displacement;
+
+              targetBubble.style.transition = 'transform 0.06s ease-out, opacity 0.06s ease-out';
+              targetBubble.style.opacity = Math.min(p.progress * 1.5, 1);
+              targetBubble.style.transform = `translateY(-50%) translateX(${shift}px)`;
+              targetBubble.classList.toggle('ready', p.isReady);
+
+              clearTimeout(swipeDismissTimer);
+              swipeDismissTimer = setTimeout(() => { resetOverscrollBubbles(); swipeState.checked = false; }, 320);
+            });
+          }
+        } else if (e.channel === 'edge-swipe-commit') {
+          clearTimeout(swipeDismissTimer);
+          swipeState.checked = false;
+          const dir = e.args[0];
+          const targetBubble = dir === 'back' ? bubbleLeft : bubbleRight;
+          
+          targetBubble.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out';
+          const exitDistance = 130;
+          if (dir === 'back') {
+            targetBubble.style.transform = `translateY(-50%) translateX(${exitDistance}px) scale(0.85)`;
+          } else {
+            targetBubble.style.transform = `translateY(-50%) translateX(-${exitDistance}px) scale(0.85)`;
+          }
+          targetBubble.style.opacity = '0';
+          targetBubble.classList.remove('ready');
+
+          setTimeout(() => resetOverscrollBubbles(), 220);
+
+          if (dir === 'back') navigateBack();
+          else {
+            const t = tabs.find(x => x.id === activeTabId);
+            if (t && t.webview.canGoForward()) t.webview.goForward();
+          }
+        } else if (e.channel === 'edge-swipe-cancel') {
+          swipeState.checked = false;
+          resetOverscrollBubbles();
+        } else if (e.channel === 'cws-install-request') {
+          installExtensionFromWebStore(e.args[0]);
+        }
+      });
+
+      webview.addEventListener('page-title-updated', (e) => {
+        tab.title = e.title;
+        renderTabs();
+        saveSession();
+      });
+
+      webview.addEventListener('page-favicon-updated', (e) => {
+        if (e.favicons && e.favicons.length > 0) {
+          tab.favicon = e.favicons[0];
+          renderTabs();
+          saveSession();
+        }
+      });
+
+      webview.addEventListener('did-navigate', (e) => {
+        tab.url = e.url;
+        tab.lastActive = Date.now();
+        saveSession();
+        if (e.url === 'about:blank' || !e.url) {
+          if (activeTabId === id && !isSplitMode) showHomeOverlay();
+          readerBtn.style.display = 'none';
+        } else {
+          if (activeTabId === id) {
+            urlBar.value = e.url;
+            checkChromeWebStoreUrl(e.url);
+            hideHomeOverlay();
+            readerBtn.style.display = 'flex';
+          }
+        }
+      });
+
+      tabs.push(tab);
+    renderTabs();
+
+    if (activateTab) {
+      switchTab(id);
+      if (!url) showHomeOverlay();
+    }
+    saveSession();
+    return tab;
+  }
+
+  ipcRenderer.on('open-url-in-tab', (e, data) => {
+    const targetUrl = (typeof data === 'object' && data.url) ? data.url : data;
+    if (targetUrl) {
+      const activate = (typeof data === 'object' && data.inBackground !== undefined) ? !data.inBackground : true;
+      createTab(targetUrl, false, null, null, activate);
+    }
+  });
+
+  let draggedTabId = null;
+
+  function handleTabDragStart(e, id) {
+      draggedTabId = id;
+      e.dataTransfer.setData('text/plain', id);
+      document.body.classList.add('tab-dragging');
+    }
+
+    function handleTabDragEnd() {
+      draggedTabId = null;
+      document.body.classList.remove('tab-dragging');
+      document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('drag-over'));
+    }
+
+    function switchTab(id) {
+      if (isSplitMode) {
+        if (id === splitPrimaryTabId) activeTabId = splitPrimaryTabId;
+        else if (id === splitSecondaryTabId) activeTabId = splitSecondaryTabId;
+        else {
+          if (activeTabId === splitSecondaryTabId) splitSecondaryTabId = id;
+          else splitPrimaryTabId = id;
+          activeTabId = id;
+        }
+        renderSplitLayout();
+      } else {
+        activeTabId = id;
+        tabs.forEach(t => {
+          if (t.id === id) {
+            t.webview.style.display = '';
+            t.webview.classList.add('active');
+            t.lastActive = Date.now();
+            if (t.isSleeping) {
+              t.isSleeping = false;
+              t.webview.loadURL(t.savedUrl || t.url || 'about:blank');
+            }
+            if (!t.url || t.url === 'about:blank') {
+              showHomeOverlay();
+              readerBtn.style.display = 'none';
+            } else {
+              hideHomeOverlay();
+              urlBar.value = t.url;
+              checkChromeWebStoreUrl(t.url);
+              readerBtn.style.display = 'flex';
+            }
+          } else {
+            t.webview.classList.remove('active');
+          }
+        });
+      }
+
+      const curTab = tabs.find(t => t.id === activeTabId);
+      applyAccentColor(curTab?.themeColor);
+      toggleSettings(false);
+      extPopupBubble.classList.remove('open');
+      renderTabs();
+      saveSession();
+    }
+
+    function handleSafeCloseTab() {
+      if (tabs.length <= 1) {
+        const current = tabs[0];
+        current.url = 'about:blank';
+        current.title = 'Dashboard';
+        current.favicon = null;
+        current.webview.loadURL('about:blank');
+        showHomeOverlay();
+        renderTabs();
+        saveSession();
+      } else {
+        closeTab(activeTabId);
+      }
+    }
+
+    function closeTab(id) {
+      const index = tabs.findIndex(t => t.id === id);
+      if (index === -1) return;
+
+      const closingTab = tabs[index];
+      if (closingTab.url && !closingTab.url.startsWith('about:')) {
+        recentlyClosedTabs.push({ url: closingTab.url, title: closingTab.title });
+        if (recentlyClosedTabs.length > 20) recentlyClosedTabs.shift();
+      }
+
+      try {
+        closingTab.webview.stop();
+        closingTab.webview.src = 'about:blank';
+      } catch (e) {}
+      closingTab.webview.remove();
+      closingTab.webview = null;
+      tabs.splice(index, 1);
+
+      if (isSplitMode) {
+        if (tabs.length < 2 || id === splitPrimaryTabId || id === splitSecondaryTabId) {
+          exitSplitView();
+          return;
+        }
+      }
+
+      if (tabs.length === 0) {
+        createTab();
+      } else if (activeTabId === id) {
+        switchTab(tabs[Math.max(0, index - 1)].id);
+      } else {
+        renderTabs();
+      }
+      saveSession();
+    }
+
+    function toggleSaveTab(id) {
+      const tab = tabs.find(t => t.id === id);
+      if (tab) {
+        tab.isSaved = !tab.isSaved;
+        renderTabs();
+        saveSession();
+      }
+    }
+
+    function renderTabs() {
+      openTabsList.innerHTML = '';
+      savedTabsList.innerHTML = '';
+
+      tabs.forEach((t, idx) => {
+        const tabEl = document.createElement('div');
+        tabEl.className = 'tab-item' + 
+          (t.id === activeTabId ? ' active' : '') + 
+          (t.isAudible ? ' audible' : '') +
+          (t.isSleeping ? ' sleeping' : '');
+        
+        tabEl.draggable = true;
+        tabEl.ondragstart = (e) => handleTabDragStart(e, t.id);
+        tabEl.ondragend = handleTabDragEnd;
+        tabEl.ondragover = (e) => {
+          e.preventDefault();
+          tabEl.classList.add('drag-over');
+        };
+        tabEl.ondragleave = () => tabEl.classList.remove('drag-over');
+        tabEl.ondrop = (e) => {
+          e.preventDefault();
+          tabEl.classList.remove('drag-over');
+          if (!draggedTabId || draggedTabId === t.id) return;
+          const fromIdx = tabs.findIndex(x => x.id === draggedTabId);
+          const toIdx = idx;
+          const [moved] = tabs.splice(fromIdx, 1);
+          tabs.splice(toIdx, 0, moved);
+          renderTabs();
+        };
+
+        tabEl.onclick = () => switchTab(t.id);
+
+        const icon = (t.favicon && isSafeIconUrl(t.favicon))
+          ? `<img src="${escHtml(t.favicon)}" class="tab-favicon" onerror="this.style.display='none'"/>`
+          : (t.isSleeping ? `<span>💤</span>` : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>`);
+
+        tabEl.innerHTML = `
+          ${icon}
+          <span class="tab-title">${escHtml(t.title || 'New Tab')}</span>
+          <button class="tab-audio-btn" title="${t.isMuted ? 'Unmute tab' : 'Mute tab'}">${t.isMuted ? '🔇' : '🔊'}</button>
+          <div class="tab-actions">
+            <button class="tab-action-btn pin-action" title="${t.isSaved ? 'Move to Open Tabs' : 'Save to Workspace'}">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="${t.isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+            </button>
+            <button class="tab-action-btn close-action" title="Close">
+              <svg width="11" height="11" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        `;
+
+        tabEl.querySelector('.tab-audio-btn').onclick = (e) => {
+          e.stopPropagation();
+          t.isMuted = !t.isMuted;
+          t.webview.setAudioMuted(t.isMuted);
+          renderTabs();
+        };
+
+        tabEl.querySelector('.pin-action').onclick = (e) => { e.stopPropagation(); toggleSaveTab(t.id); };
+        tabEl.querySelector('.close-action').onclick = (e) => { e.stopPropagation(); closeTab(t.id); };
+
+        if (t.isSaved) savedTabsList.appendChild(tabEl);
+        else openTabsList.appendChild(tabEl);
+      });
+    }
+
+    const fileDropOverlay = document.getElementById('file-drop-overlay');
+    let fileDragCounter = 0;
+
+    function handleDroppedFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const filePath = file.path;
+        if (!filePath) continue;
+
+        const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
+        const fileName = file.name || path.basename(filePath);
+
+        const activeTab = tabs.find(t => t.id === activeTabId);
+        if (i === 0 && activeTab && (!activeTab.url || activeTab.url === 'about:blank' || !homeScreen.classList.contains('hidden'))) {
+          activeTab.url = fileUrl;
+          activeTab.title = fileName;
+          activeTab.webview.loadURL(fileUrl);
+          urlBar.value = fileUrl;
+          hideHomeOverlay();
+          renderTabs();
+          saveSession();
+        } else {
+          createTab(fileUrl, false, null, fileName, i === 0);
+        }
+      }
+    }
+
+    window.addEventListener('dragenter', (e) => {
+      if (draggedTabId) return;
+      if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+        fileDragCounter++;
+        fileDropOverlay.classList.add('active');
+      }
+    });
+
+    window.addEventListener('dragleave', (e) => {
+      if (draggedTabId) return;
+      fileDragCounter--;
+      if (fileDragCounter <= 0) {
+        fileDragCounter = 0;
+        fileDropOverlay.classList.remove('active');
+      }
+    });
+
+    window.addEventListener('dragover', (e) => {
+      if (draggedTabId) return;
+      if (e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      }
+    });
+
+    window.addEventListener('drop', (e) => {
+      if (draggedTabId) return;
+      fileDragCounter = 0;
+      fileDropOverlay.classList.remove('active');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        e.preventDefault();
+        handleDroppedFiles(e.dataTransfer.files);
+      }
+    });
+
+    let tabSleepEnabled = true;
+    /* Settings -> Privacy: link behaviour and the sign-in cookie fix.
+     * Both are persisted through silence-core's deep-merge handler. */
+    (function wireSecuritySwitches() {
+      const save = (patch) => { try { ipcRenderer.invoke('silence:set-settings', patch); } catch (e) {} };
+      const load = async () => {
+        let s = {};
+        try { s = await ipcRenderer.invoke('silence:get-settings') || {}; } catch (e) { return; }
+        const ask = document.getElementById('ask-newtab-checkbox');
+        const cookie = document.getElementById('cookie-fix-checkbox');
+        if (ask) {
+          ask.checked = !!(s.tabs && s.tabs.askBeforeNewTab);
+          ask.onchange = () => save({ tabs: { askBeforeNewTab: ask.checked } });
+        }
+        if (cookie) {
+          cookie.checked = !(s.privacy && s.privacy.thirdPartyCookieFix === false);
+          cookie.onchange = () => save({ privacy: { thirdPartyCookieFix: cookie.checked } });
+        }
+      };
+      load();
+    })();
+
+    const tabSleepCheckbox = document.getElementById('tab-sleep-checkbox');
+    if (tabSleepCheckbox) {
+      tabSleepCheckbox.onchange = (e) => { tabSleepEnabled = e.target.checked; };
+    }
+
+    setInterval(() => {
+      if (!tabSleepEnabled) return;
+      const now = Date.now();
+      tabs.forEach(t => {
+        if (t.id !== activeTabId && !t.isAudible && !t.isSleeping && (now - t.lastActive > 5 * 60 * 1000)) {
+          if (t.url && !t.url.startsWith('about:')) {
+            t.isSleeping = true;
+            t.savedUrl = t.url;
+            try {
+              t.webview.stop();
+              t.webview.src = 'about:blank';
+              t.webview.style.display = 'none';
+            } catch (e) {}
+            renderTabs();
+          }
+        }
+      });
+    }, 45000);
+
+    const purgeRamBtn = document.getElementById('purge-ram-btn');
+    if (purgeRamBtn) {
+      purgeRamBtn.onclick = async () => {
+        purgeRamBtn.innerText = 'Purging...';
+        await ipcRenderer.invoke('purge-memory');
+        tabs.forEach(t => {
+          if (t.id !== activeTabId && !t.isAudible) {
+            try { t.webview.stop(); } catch (e) {}
+          }
+        });
+        purgeRamBtn.innerText = '✓ Memory Purged';
+        setTimeout(() => { purgeRamBtn.innerText = '⚡ Free RAM Now'; }, 2200);
+      };
+    }
+
+    const GESTURE_ACTIONS = [
+      { id: 'back', name: 'Back' },
+      { id: 'forward', name: 'Forward' },
+      { id: 'close-tab', name: 'Close Tab' },
+      { id: 'reload', name: 'Reload Page' },
+      { id: 'new-tab', name: 'New Tab' },
+      { id: 'restore-tab', name: 'Reopen Closed Tab' },
+      { id: 'next-tab', name: 'Next Tab' },
+      { id: 'prev-tab', name: 'Previous Tab' },
+      { id: 'duplicate-tab', name: 'Duplicate Tab' },
+      { id: 'toggle-split', name: 'Toggle Split Screen' },
+      { id: 'reader-mode', name: 'Reader Mode' },
+      { id: 'dark-mode', name: 'Force Dark Mode' },
+      { id: 'toggle-pip', name: 'Picture-in-Picture' },
+      { id: 'go-home', name: 'Silence Dashboard' },
+      { id: 'scroll-top', name: 'Scroll to Top' },
+      { id: 'scroll-bottom', name: 'Scroll to Bottom' },
+      { id: 'disabled', name: 'Disabled' }
+    ];
+
+    let customGestureConfig = JSON.parse(localStorage.getItem('silence_custom_gestures')) || {
+      'L': 'back',
+      'R': 'forward',
+      'DR': 'close-tab',
+      'UD': 'reload',
+      'LR': 'new-tab',
+      'RL': 'restore-tab',
+      'UR': 'next-tab',
+      'LU': 'prev-tab',
+      'DL': 'duplicate-tab',
+      'RD': 'toggle-split'
+    };
+
+    function renderGestureRemapper() {
+      const container = document.getElementById('gesture-remapper-list');
+      container.innerHTML = '';
+
+      const gestureStrokes = [
+        { key: 'L', label: 'Draw Left (←)' },
+        { key: 'R', label: 'Draw Right (→)' },
+        { key: 'DR', label: 'Draw Down-Right (└)' },
+        { key: 'UD', label: 'Draw Up-Down (⇅)' },
+        { key: 'LR', label: 'Draw Left-Right (⇄)' },
+        { key: 'RL', label: 'Draw Right-Left (⇆)' },
+        { key: 'UR', label: 'Draw Up-Right (↗)' },
+        { key: 'LU', label: 'Draw Left-Up (↖)' },
+        { key: 'DL', label: 'Draw Down-Left (↙)' },
+        { key: 'RD', label: 'Draw Right-Down (RD)' }
+      ];
+
+      gestureStrokes.forEach(g => {
+        const row = document.createElement('div');
+        row.className = 'setting-card-row';
+        row.innerHTML = `
+          <span style="font-size:13px; font-weight:500;">${g.label}</span>
+          <select data-gesture="${g.key}" style="padding:5px 10px; font-size:12px;">
+            ${GESTURE_ACTIONS.map(a => `<option value="${a.id}" ${customGestureConfig[g.key] === a.id ? 'selected' : ''}>${a.name}</option>`).join('')}
+          </select>
+        `;
+
+        row.querySelector('select').onchange = (e) => {
+          customGestureConfig[g.key] = e.target.value;
+          localStorage.setItem('silence_custom_gestures', JSON.stringify(customGestureConfig));
+          tabs.forEach(t => {
+            if (t.webview) t.webview.send('sync-custom-gestures', customGestureConfig);
+          });
+        };
+        container.appendChild(row);
+      });
+    }
+
+    renderGestureRemapper();
+
+    const testCanvas = document.getElementById('gesture-test-canvas');
+    const testCtx = testCanvas.getContext('2d');
+    let isDrawingTest = false;
+
+    testCanvas.addEventListener('mousedown', (e) => {
+      if (e.button === 2) {
+        isDrawingTest = true;
+        testCtx.clearRect(0, 0, testCanvas.width, testCanvas.height);
+        testCtx.beginPath();
+        testCtx.strokeStyle = '#6366f1';
+        testCtx.lineWidth = 3;
+        testCtx.moveTo(e.offsetX, e.offsetY);
+      }
+    });
+    testCanvas.addEventListener('mousemove', (e) => {
+      if (isDrawingTest) {
+        testCtx.lineTo(e.offsetX, e.offsetY);
+        testCtx.stroke();
+      }
+    });
+    window.addEventListener('mouseup', () => { isDrawingTest = false; });
+    testCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    function showHomeOverlay() {
+      if (isSplitMode) return;
+      if (homeScreen) homeScreen.classList.remove('hidden');
+      if (urlBar) urlBar.value = '';
+      if (homeInput) {
+        homeInput.value = '';
+        setTimeout(() => homeInput.focus(), 50);
+      }
+      if (cwsInstallBtn) cwsInstallBtn.classList.remove('active');
+    }
+
+    function hideHomeOverlay() {
+      if (homeScreen) homeScreen.classList.add('hidden');
+    }
+
+    function navigateActiveTab(query) {
+      query = (query || '').trim();
+      if (!query) return;
+
+      toggleSettings(false);
+      omniboxDropdown.classList.remove('open');
+
+      if (query.startsWith('!g ')) query = 'https://www.google.com/search?q=' + encodeURIComponent(query.slice(3));
+      else if (query.startsWith('!yt ')) query = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(query.slice(4));
+      else if (query.startsWith('!w ')) query = 'https://en.wikipedia.org/wiki/Special:Search?search=' + encodeURIComponent(query.slice(3));
+      else if (query.startsWith('!pdf ')) query = searchEngine + encodeURIComponent(query.slice(5) + ' filetype:pdf');
+
+      let targetUrl = '';
+      if (query.startsWith('http://') || query.startsWith('https://') || query.startsWith('file:///') || query.startsWith('silence://')) targetUrl = query;
+      else if (query.includes('.') && !query.includes(' ')) targetUrl = 'https://' + query;
+      else targetUrl = searchEngine + encodeURIComponent(query);
+
+      let activeTab = tabs.find(t => t.id === activeTabId);
+      if (!activeTab) {
+        activeTab = createTab(targetUrl, false, null, null, true);
+      } else {
+        activeTab.url = targetUrl;
+        activeTab.webview.loadURL(targetUrl);
+        urlBar.value = targetUrl;
+        hideHomeOverlay();
+        checkChromeWebStoreUrl(targetUrl);
+      }
+    }
+
+    function navigateBack() {
+      const t = tabs.find(x => x.id === activeTabId);
+      if (!t || !t.webview) return;
+      if (t.webview.canGoBack()) {
+        t.webview.goBack();
+      } else {
+        t.url = 'about:blank';
+        t.webview.loadURL('about:blank');
+        showHomeOverlay();
+      }
+      resetOverscrollBubbles();
+    }
+
+    urlBar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') navigateActiveTab(urlBar.value);
+      else if (e.key === 'Escape') omniboxDropdown.classList.remove('open');
+    });
+
+    homeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') navigateActiveTab(homeInput.value);
+    });
+
+    document.getElementById('new-tab-btn').onclick = () => { toggleSettings(false); createTab(); };
+    document.getElementById('home-btn').onclick = () => { toggleSettings(false); showHomeOverlay(); };
+    document.getElementById('back-btn').onclick = navigateBack;
+    document.getElementById('forward-btn').onclick = () => {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.webview.canGoForward()) activeTab.webview.goForward();
+    };
+    document.getElementById('reload-btn').onclick = () => {
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab) activeTab.webview.reload();
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && newTabPrompt.classList.contains('visible')) {
+        hideNewTabPrompt();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        handleSafeCloseTab();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'k')) {
+        e.preventDefault();
+        openCommandPalette();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        toggleSplitView();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        toggleForceDarkMode();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        openFindWidget();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        toggleScratchpad();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        adjustZoom(0.1);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault();
+        adjustZoom(-0.1);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault();
+        document.getElementById('zoom-reset-btn').click();
+      }
+    });
+
+    let leaveTimer = null;
+    function openSidebar() {
+      clearTimeout(leaveTimer);
+      sidebarWrapper.classList.add('open');
+      pillTrigger.style.opacity = '0';
+    }
+
+    function closeSidebar() {
+      if (isPinned) return;
+      leaveTimer = setTimeout(() => {
+        if (downloadsFlyout.matches(':hover') || extMenuDropdown.matches(':hover') || extPopupBubble.matches(':hover')) return;
+        sidebarWrapper.classList.remove('open');
+        pillTrigger.style.opacity = '1';
+        if (!extPopupBubble.matches(':hover') && !window.__sproPopupOpen) extPopupBubble.classList.remove('open');
+        extMenuDropdown.classList.remove('open');
+        downloadsFlyout.classList.remove('open');
+        omniboxDropdown.classList.remove('open');
+      }, 200);
+    }
+
+    edgeHoverZone.addEventListener('mouseenter', openSidebar);
+    pillTrigger.addEventListener('mouseenter', openSidebar);
+    pillTrigger.addEventListener('click', openSidebar);
+    sidebarWrapper.addEventListener('mouseenter', openSidebar);
+    sidebarWrapper.addEventListener('mouseleave', closeSidebar);
+
+    async function openLocalMediaFile() {
+      try {
+        const filePath = await ipcRenderer.invoke('open-media-file-dialog');
+        if (filePath) {
+          const fileUrl = 'file:///' + filePath.replace(/\\/g, '/');
+          createTab(fileUrl, false, null, path.basename(filePath), true);
+        }
+      } catch (err) {}
+    }
+
+    let paletteSelectedIndex = 0;
+    const staticCommands = [
+      { label: 'New Tab', action: () => createTab(), tag: 'Command' },
+      { label: 'Open Local PDF or Video File', action: openLocalMediaFile, tag: 'Media' },
+      { label: 'Purge RAM & Free Memory Cache', action: () => { if (purgeRamBtn) purgeRamBtn.click(); }, tag: 'Performance' },
+      { label: 'Toggle Reader Mode', action: openReaderMode, tag: 'Reader' },
+      { label: 'Toggle Force Dark Mode', action: toggleForceDarkMode, tag: 'Theme' },
+      { label: 'Toggle Split Screen', action: () => toggleSplitView(), tag: 'Layout' },
+      { label: 'Picture-in-Picture Video', action: () => pipBtn.click(), tag: 'Media' },
+      { label: 'Media Speed: 1.25x', action: () => { const a = tabs.find(t => t.id === activeTabId); a?.webview?.send('set-media-speed', 1.25); }, tag: 'Media' },
+      { label: 'Media Speed: 1.5x', action: () => { const a = tabs.find(t => t.id === activeTabId); a?.webview?.send('set-media-speed', 1.5); }, tag: 'Media' },
+      { label: 'Media Speed: 2x', action: () => { const a = tabs.find(t => t.id === activeTabId); a?.webview?.send('set-media-speed', 2.0); }, tag: 'Media' },
+      { label: 'Open Scratchpad Notes', action: () => toggleScratchpad(), tag: 'Tools' },
+      { label: 'Find in Page', action: () => openFindWidget(), tag: 'Tools' },
+      { label: 'Downloads Shelf', action: () => downloadsToggleBtn.click(), tag: 'Files' },
+      { label: 'Open Settings', action: () => toggleSettings(true), tag: 'Settings' }
+    ];
+
+    function openCommandPalette() {
+      paletteBackdrop.classList.add('open');
+      paletteInput.value = '';
+      paletteSelectedIndex = 0;
+      renderPaletteResults('');
+      setTimeout(() => paletteInput.focus(), 50);
+    }
+
+    function closeCommandPalette() { paletteBackdrop.classList.remove('open'); }
+    document.getElementById('palette-open-btn').onclick = openCommandPalette;
+    paletteBackdrop.onclick = (e) => { if (e.target === paletteBackdrop) closeCommandPalette(); };
+
+    function renderPaletteResults(query) {
+      paletteResults.innerHTML = '';
+      const q = query.toLowerCase().trim();
+
+      const matchedTabs = tabs.filter(t => t.title.toLowerCase().includes(q) || t.url.toLowerCase().includes(q)).map(t => ({
+        label: t.title || 'Tab',
+        action: () => switchTab(t.id),
+        tag: 'Open Tab'
+      }));
+
+      const matchedCommands = staticCommands.filter(c => c.label.toLowerCase().includes(q));
+      const combined = [...matchedTabs, ...matchedCommands];
+
+      if (combined.length === 0 && q) {
+        combined.push({
+          label: `Search Google for "${query}"`,
+          action: () => navigateActiveTab(query),
+          tag: 'Search'
+        });
+      }
+
+      combined.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'palette-item' + (idx === paletteSelectedIndex ? ' selected' : '');
+        div.innerHTML = `<span>${item.label}</span><span class="palette-tag">${item.tag}</span>`;
+        div.onclick = () => {
+          item.action();
+          closeCommandPalette();
+        };
+        paletteResults.appendChild(div);
+      });
+    }
+
+    paletteInput.addEventListener('input', () => {
+      paletteSelectedIndex = 0;
+      renderPaletteResults(paletteInput.value);
+    });
+
+    paletteInput.addEventListener('keydown', (e) => {
+      const items = paletteResults.querySelectorAll('.palette-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        paletteSelectedIndex = (paletteSelectedIndex + 1) % items.length;
+        renderPaletteResults(paletteInput.value);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        paletteSelectedIndex = (paletteSelectedIndex - 1 + items.length) % items.length;
+        renderPaletteResults(paletteInput.value);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const selected = items[paletteSelectedIndex];
+        if (selected) selected.click();
+      } else if (e.key === 'Escape') closeCommandPalette();
+    });
+
+    let downloadHistory = JSON.parse(localStorage.getItem('silence_dl_history')) || [];
+    const hiddenDownloadCardIds = new Set();
+
+    function renderDownloadsFlyout() {
+      dlFlyoutList.innerHTML = downloadHistory.length === 0
+        ? '<div style="font-size:12px; color:#666; padding:12px; text-align:center;">No recent downloads</div>'
+        : '';
+
+      downloadHistory.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px; background:rgba(255,255,255,0.03); border-radius:6px; font-size:12px;';
+        row.innerHTML = `
+          <span style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(item.filename)}</span>
+          <button class="action-btn" style="padding:3px 8px; font-size:11px;">Show</button>
+        `;
+        row.querySelector('button').onclick = () => ipcRenderer.send('show-in-folder', item.savePath);
+        dlFlyoutList.appendChild(row);
+      });
+    }
+
+    if (downloadsToggleBtn) {
+      downloadsToggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isOpen = !downloadsFlyout.classList.contains('open');
+        downloadsFlyout.classList.toggle('open', isOpen);
+        downloadsToggleBtn.classList.toggle('active', isOpen);
+        if (isOpen) {
+          renderDownloadsFlyout();
+          if (dlIndicatorDot) dlIndicatorDot.style.display = 'none';
+          if (scratchpadDrawer) scratchpadDrawer.classList.remove('open');
+          if (scratchpadBtn) scratchpadBtn.classList.remove('active');
+          toggleSettings(false);
+        }
+      };
+    }
+
+    document.getElementById('clear-dl-btn').onclick = () => {
+      downloadHistory = [];
+      localStorage.removeItem('silence_dl_history');
+      renderDownloadsFlyout();
+    };
+    ipcRenderer.on('download-failed', (e, item) => {
+      hiddenDownloadCardIds.delete(item.id);
+      const card = document.getElementById('dl_' + item.id);
+      if (card) {
+        card.classList.remove('hidden-card');
+        card.innerHTML = `
+          <div class="dl-header">
+            <span class="dl-name">${item.filename}</span>
+            <span style="color:#f87171;" title="${item.reason || 'Failed'}">✕ Failed (${item.reason || 'Error'})</span>
+          </div>
+        `;
+        setTimeout(() => { card.remove(); updateShelfControls(); }, 4000);
+      }
+    });
+
+    ipcRenderer.on('download-cleanup-tab', (e, data) => {
+      const dlUrl = typeof data === 'object' ? data.url : data;
+      const emptyTab = tabs.find(t => 
+        (t.url === dlUrl || t.url === 'about:blank' || t.title === 'Loading...' || t.title === 'New Tab') &&
+        tabs.length > 1 &&
+        t.id === activeTabId
+      );
+      if (emptyTab) {
+        closeTab(emptyTab.id);
+      }
+    });
+
+    function updateShelfControls() {
+      const activeCards = downloadShelf.querySelectorAll('.download-card:not(.hidden-card)');
+      let header = document.getElementById('shelf-header-bar');
+      if (activeCards.length > 1) {
+        if (!header) {
+          header = document.createElement('div');
+          header.className = 'shelf-header-bar';
+          header.id = 'shelf-header-bar';
+          header.innerHTML = `<button class="shelf-btn" id="hide-all-dl-btn">✕ Hide All</button>`;
+          downloadShelf.prepend(header);
+          header.querySelector('#hide-all-dl-btn').onclick = () => {
+            activeCards.forEach(card => {
+              card.classList.add('hidden-card');
+              hiddenDownloadCardIds.add(card.id.replace('dl_', ''));
+            });
+            header.remove();
+          };
+        }
+      } else if (header && activeCards.length <= 1) header.remove();
+    }
+
+    ipcRenderer.on('download-start', (e, item) => {
+      if (document.getElementById('dl_' + item.id)) return;
+      if (dlIndicatorDot) dlIndicatorDot.style.display = 'block';
+      const card = document.createElement('div');
+      card.className = 'download-card';
+      card.id = 'dl_' + item.id;
+      card.innerHTML = `
+        <div class="dl-header">
+          <span class="dl-name" title="${escHtml(item.filename)}">${escHtml(item.filename)}</span>
+          <span class="dl-percent" id="dlp_${item.id}">0%</span>
+        </div>
+        <div class="dl-bar-bg"><div class="dl-bar-fill" id="dlb_${item.id}"></div></div>
+        <div class="dl-footer">
+          <span id="dls_${item.id}">Starting...</span>
+          <div class="dl-btn-group">
+            <button class="dl-btn hide-btn">Hide</button>
+            <button class="dl-btn cancel-btn">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      card.querySelector('.hide-btn').onclick = () => {
+        card.classList.add('hidden-card');
+        hiddenDownloadCardIds.add(item.id);
+        updateShelfControls();
+      };
+      card.querySelector('.cancel-btn').onclick = () => ipcRenderer.send('cancel-download', item.id);
+
+      downloadShelf.appendChild(card);
+      updateShelfControls();
+    });
+
+    ipcRenderer.on('download-progress', (e, item) => {
+      if (hiddenDownloadCardIds.has(item.id)) return;
+      const bar = document.getElementById('dlb_' + item.id);
+      const text = document.getElementById('dlp_' + item.id);
+      const status = document.getElementById('dls_' + item.id);
+      if (bar) bar.style.width = item.percent + '%';
+      if (text) text.innerText = item.percent + '%';
+      if (status) status.innerText = (item.received / (1024 * 1024)).toFixed(1) + ' MB / ' + (item.totalBytes / (1024 * 1024)).toFixed(1) + ' MB';
+    });
+
+    ipcRenderer.on('download-cancelled', (e, item) => {
+      hiddenDownloadCardIds.delete(item.id);
+      const card = document.getElementById('dl_' + item.id);
+      if (card) {
+        card.classList.remove('hidden-card');
+        card.innerHTML = `
+          <div class="dl-header">
+            <span class="dl-name">${escHtml(item.filename)}</span>
+            <span style="color:#f87171;">Cancelled</span>
+          </div>
+        `;
+        setTimeout(() => { card.remove(); updateShelfControls(); }, 1200);
+      }
+    });
+
+    ipcRenderer.on('download-complete', (e, item) => {
+      downloadHistory.unshift({ filename: item.filename, savePath: item.savePath });
+      if (downloadHistory.length > 20) downloadHistory.pop();
+      localStorage.setItem('silence_dl_history', JSON.stringify(downloadHistory));
+
+      const card = document.getElementById('dl_' + item.id);
+      if (card) {
+        card.classList.remove('hidden-card');
+        card.innerHTML = `
+          <div class="dl-header">
+            <span class="dl-name">${escHtml(item.filename)}</span>
+            <span style="color:#34d399;">✓ Complete</span>
+          </div>
+          <div class="dl-footer" style="margin-top:4px;">
+            <button class="action-btn" onclick="ipcRenderer.send('show-in-folder', '${item.savePath.replace(/\\/g, '\\\\')}')">Show in Folder</button>
+            <button class="action-btn" onclick="this.closest('.download-card').remove(); updateShelfControls();">✕</button>
+          </div>
+        `;
+        setTimeout(() => {
+          if (card) {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            setTimeout(() => { card.remove(); updateShelfControls(); }, 250);
+          }
+        }, 2500);
+      }
+      hiddenDownloadCardIds.delete(item.id);
+    });
+
+    let currentDetectedExtId = null;
+    function checkChromeWebStoreUrl(url) {
+      const match = url.match(/chromewebstore\.google\.com\/detail\/[^\/]+\/([a-z]{32})/);
+      if (match) {
+        currentDetectedExtId = match[1];
+        cwsInstallBtn.classList.add('active');
+        cwsInstallBtn.innerText = '＋ Add to Silence';
+      } else {
+        currentDetectedExtId = null;
+        cwsInstallBtn.classList.remove('active');
+      }
+    }
+
+    async function installExtensionFromWebStore(extId) {
+      cwsInstallBtn.innerText = 'Installing...';
+      const res = await ipcRenderer.invoke('install-cws-extension', extId);
+      if (res && res.success) {
+        if (!pinnedExtensions.includes(res.extension.id)) {
+          pinnedExtensions.push(res.extension.id);
+          localStorage.setItem('silence_pinned_exts', JSON.stringify(pinnedExtensions));
+        }
+        await loadExtensionsUI();
+        cwsInstallBtn.innerText = '✓ Installed';
+        setTimeout(() => cwsInstallBtn.classList.remove('active'), 3000);
+      } else {
+        cwsInstallBtn.innerText = '＋ Add to Silence';
+      }
+    }
+
+    cwsInstallBtn.onclick = () => {
+      if (currentDetectedExtId) installExtensionFromWebStore(currentDetectedExtId);
+    };
+
+    let pinnedExtensions = JSON.parse(localStorage.getItem('silence_pinned_exts')) || [];
+
+    async function loadExtensionsUI() {
+      const list = await ipcRenderer.invoke('get-extensions') || [];
+      extToolbar.innerHTML = '';
+      extMenuDropdown.innerHTML = '';
+      const managerList = document.getElementById('extensions-manager-list');
+      managerList.innerHTML = '';
+
+      list.forEach(ext => {
+        const isPinnedExt = pinnedExtensions.includes(ext.id);
+        if (isPinnedExt) {
+          const btn = document.createElement('button');
+          btn.className = 'ext-toolbar-btn';
+          btn.title = ext.name;
+          btn.innerHTML = ext.icon ? `<img src="${ext.icon}" />` : '🧩';
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            triggerExtensionAction(ext, btn);
+          };
+          extToolbar.appendChild(btn);
+        }
+
+        const dropdownItem = document.createElement('div');
+        dropdownItem.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:6px; border-radius:6px; cursor:pointer; font-size:12px;';
+        dropdownItem.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${ext.icon ? `<img src="${ext.icon}" style="width:16px;height:16px;border-radius:3px;"/>` : '🧩'}
+            <span style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ext.name}</span>
+          </div>
+          <button style="background:transparent; border:none; color:#888; cursor:pointer;" title="Pin to toolbar">${isPinnedExt ? '📌' : '📍'}</button>
+        `;
+        dropdownItem.onclick = (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          triggerExtensionAction(ext, extMenuBtn);
+        };
+        dropdownItem.querySelector('button').onclick = (e) => {
+          e.stopPropagation();
+          togglePinExtension(ext.id);
+        };
+        extMenuDropdown.appendChild(dropdownItem);
+
+        const card = document.createElement('div');
+        card.className = 'ext-card';
+        card.innerHTML = `
+          <div class="ext-left">
+            ${ext.icon ? `<img src="${ext.icon}" />` : '🧩'}
+            <div>
+              <div style="font-weight:500; font-size:13px;">${ext.name} <span style="font-size:11px; color:#888;">v${ext.version}</span></div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="action-btn" onclick="togglePinExtension('${ext.id}')">${isPinnedExt ? 'Unpin' : 'Pin'}</button>
+            <button class="action-btn danger" onclick="removeExtension('${ext.id}')">Remove</button>
+          </div>
+        `;
+        managerList.appendChild(card);
+      });
+    }
+
+    function togglePinExtension(id) {
+      if (pinnedExtensions.includes(id)) pinnedExtensions = pinnedExtensions.filter(x => x !== id);
+      else pinnedExtensions.push(id);
+      localStorage.setItem('silence_pinned_exts', JSON.stringify(pinnedExtensions));
+      loadExtensionsUI();
+    }
+
+    async function removeExtension(id) {
+      await ipcRenderer.invoke('remove-extension', id);
+      pinnedExtensions = pinnedExtensions.filter(x => x !== id);
+      localStorage.setItem('silence_pinned_exts', JSON.stringify(pinnedExtensions));
+      loadExtensionsUI();
+    }
+
+    function triggerExtensionAction(ext, triggerEl) {
+      if (ext.popupUrl) {
+        const rect = triggerEl.getBoundingClientRect();
+        extPopupBubble.style.top = (rect.bottom + 6) + 'px';
+        extPopupBubble.style.left = Math.max(10, rect.left - 140) + 'px';
+        extPopupWebview.src = ext.popupUrl;
+        extPopupBubble.classList.toggle('open');
+        extMenuDropdown.classList.remove('open');
+      }
+    }
+
+    extMenuBtn.onclick = (e) => {
+      e.stopPropagation();
+      const rect = extMenuBtn.getBoundingClientRect();
+      extMenuDropdown.style.top = (rect.bottom + 6) + 'px';
+      extMenuDropdown.style.left = (rect.left - 100) + 'px';
+      extMenuDropdown.classList.toggle('open');
+      extPopupBubble.classList.remove('open');
+    };
+
+    function toggleSettings(forceState) {
+      const isOpen = forceState !== undefined ? forceState : !settingsScreen.classList.contains('active');
+      settingsScreen.classList.toggle('active', isOpen);
+      document.body.classList.toggle('settings-open', isOpen);
+      if (settingsToggleBtn) settingsToggleBtn.classList.toggle('active', isOpen);
+      if (isOpen) {
+        if (downloadsFlyout) downloadsFlyout.classList.remove('open');
+        if (downloadsToggleBtn) downloadsToggleBtn.classList.remove('active');
+        if (scratchpadDrawer) scratchpadDrawer.classList.remove('open');
+        if (scratchpadBtn) scratchpadBtn.classList.remove('active');
+        extMenuDropdown.classList.remove('open');
+        extPopupBubble.classList.remove('open');
+      }
+    }
+
+    if (settingsToggleBtn) {
+      settingsToggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleSettings();
+      };
+    }
+    document.getElementById('settings-close-btn').onclick = () => toggleSettings(false);
+
+    document.addEventListener('click', (e) => {
+      if (extMenuDropdown.classList.contains('open') && !extMenuBtn.contains(e.target) && !extMenuDropdown.contains(e.target)) {
+        extMenuDropdown.classList.remove('open');
+      }
+      const fromExtChrome = e.target && e.target.closest &&
+        e.target.closest('#ext-menu-dropdown, #ext-menu-btn, .ext-toolbar-btn');
+      if (extPopupBubble.classList.contains('open') && !extPopupBubble.contains(e.target) && !fromExtChrome) {
+        extPopupBubble.classList.remove('open');
+      }
+      if (downloadsFlyout.classList.contains('open') && !downloadsToggleBtn.contains(e.target) && !downloadsFlyout.contains(e.target)) {
+        downloadsFlyout.classList.remove('open');
+        downloadsToggleBtn.classList.remove('active');
+      }
+      if (omniboxDropdown.classList.contains('open') && !urlBar.contains(e.target) && !omniboxDropdown.contains(e.target)) {
+        omniboxDropdown.classList.remove('open');
+      }
+    });
+
+    document.querySelectorAll('.settings-nav-item').forEach(item => {
+      item.onclick = () => {
+        document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.settings-panel-section').forEach(p => p.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(item.dataset.target).classList.add('active');
+        document.getElementById('settings-panel-title').innerText = item.innerText.replace(/[^\w\s]/gi, '').trim();
+      };
+    });
+
+    engineSelect.onchange = (e) => {
+      searchEngine = e.target.value;
+      localStorage.setItem('silence_search_engine', searchEngine);
+    };
+
+    function applyWallpaper(path, isVideo) {
+      if (!path) {
+        wpImg.style.display = 'none';
+        wpVideo.style.display = 'none';
+        wpVideo.pause();
+        return;
+      }
+      const formatted = 'file:///' + path.replace(/\\/g, '/');
+      if (isVideo) {
+        wpImg.style.display = 'none';
+        wpVideo.style.display = 'block';
+        wpVideo.src = formatted;
+        wpVideo.play().catch(() => {});
+      } else {
+        wpVideo.style.display = 'none';
+        wpVideo.pause();
+        wpImg.style.display = 'block';
+        wpImg.src = formatted;
+      }
+    }
+
+    const savedWp = localStorage.getItem('silence_wp_path');
+    const savedIsVid = localStorage.getItem('silence_wp_is_video') === 'true';
+    if (savedWp) applyWallpaper(savedWp, savedIsVid);
+
+    wpFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const isVideo = file.type.startsWith('video/');
+      localStorage.setItem('silence_wp_path', file.path);
+      localStorage.setItem('silence_wp_is_video', isVideo);
+      applyWallpaper(file.path, isVideo);
+    });
+
+    clearWpBtn.onclick = () => {
+      localStorage.removeItem('silence_wp_path');
+      localStorage.removeItem('silence_wp_is_video');
+      applyWallpaper(null, false);
+    };
+
+    function restoreSession() {
+      const saved = localStorage.getItem('silence_saved_session');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.tabs && Array.isArray(data.tabs)) {
+            data.tabs.forEach(t => createTab(t.url, true, t.id, t.title, false));
+          }
+        } catch (e) {}
+      }
+
+      const freshTab = createTab('', false, null, 'New Tab', true);
+      switchTab(freshTab.id);
+      showHomeOverlay();
+    }
+
+    restoreSession();
+    loadExtensionsUI();
+  </script>
+<script src="silence-plus.js"></script>
+<script src="silence-pro.js"></script>
+</body>
+</html>

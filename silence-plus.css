@@ -1,0 +1,286 @@
+/* ==========================================================================
+   Silence Plus — UI polish + styles for the new settings sections
+   Scoped to the new panels/components so nothing existing is disturbed.
+   ========================================================================== */
+
+/* ---------- sidebar polish ---------- */
+.settings-sidebar .settings-nav-item {
+  justify-content: flex-start;
+  gap: 10px;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 13.2px;
+  transition: background .14s ease, color .14s ease, transform .14s ease;
+}
+.settings-sidebar .settings-nav-item span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .06);
+  font-size: 12.5px;
+}
+.settings-sidebar .settings-nav-item:hover { transform: translateX(2px); }
+.settings-sidebar .settings-nav-item.active span { background: rgba(99, 102, 241, .28); }
+.sp-nav-sep {
+  font-size: 10px; letter-spacing: .9px; text-transform: uppercase;
+  color: #5f6372; padding: 14px 12px 6px;
+}
+
+/* ---------- panel polish ---------- */
+.sp-panel { animation: spFade .22s ease; }
+@keyframes spFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.settings-panel-section .setting-card {
+  transition: border-color .16s ease, background .16s ease;
+}
+.settings-panel-section .setting-card:hover { border-color: rgba(255, 255, 255, .14); }
+.setting-card h4 { font-size: 13.8px; }
+.setting-card p { font-size: 12.2px; line-height: 1.5; color: var(--text-muted); }
+.setting-card-row + .setting-card-row { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .05); }
+
+.sp-desc { font-size: 12.2px; color: var(--text-muted); line-height: 1.55; margin-top: 2px; }
+.sp-hint { font-size: 11.6px; color: #6f7383; margin-top: 8px; line-height: 1.5; }
+.sp-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; padding: 3px 9px; border-radius: 20px;
+  background: rgba(255, 255, 255, .06); border: 1px solid var(--surface-border); color: #b9bcc7;
+}
+.sp-badge.ok { background: rgba(34, 197, 94, .13); border-color: rgba(34, 197, 94, .3); color: #6ee7a0; }
+.sp-badge.warn { background: rgba(245, 158, 11, .13); border-color: rgba(245, 158, 11, .3); color: #f6c177; }
+
+/* ---------- switch ---------- */
+.sp-switch { position: relative; width: 40px; height: 22px; flex: 0 0 40px; }
+.sp-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.sp-slider {
+  position: absolute; inset: 0; cursor: pointer; border-radius: 22px;
+  background: #33343c; border: 1px solid rgba(255, 255, 255, .08);
+  transition: background .18s ease, border-color .18s ease;
+}
+.sp-slider::before {
+  content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px;
+  background: #fff; border-radius: 50%; transition: transform .18s cubic-bezier(.2, .9, .3, 1.2);
+}
+.sp-switch input:checked + .sp-slider { background: var(--accent); border-color: var(--accent); }
+.sp-switch input:checked + .sp-slider::before { transform: translateX(18px); }
+
+/* ---------- inputs / buttons ---------- */
+.sp-input {
+  background: #1a1a1e; border: 1px solid var(--surface-border); color: #fff;
+  border-radius: 8px; padding: 8px 11px; font-size: 12.8px; outline: none; min-width: 240px;
+  transition: border-color .15s;
+}
+.sp-input:focus { border-color: var(--accent); }
+.sp-btn {
+  background: #232327; border: 1px solid var(--surface-border); color: #e6e7ec;
+  padding: 7px 13px; border-radius: 8px; font-size: 12.4px; cursor: pointer; transition: .14s;
+}
+.sp-btn:hover { background: #2c2c32; border-color: rgba(255, 255, 255, .18); }
+.sp-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sp-btn.primary:hover { background: #5457e5; }
+.sp-btn.danger:hover { background: rgba(239, 68, 68, .18); border-color: rgba(239, 68, 68, .35); color: #f87171; }
+.sp-btn.small { padding: 4px 9px; font-size: 11.6px; border-radius: 7px; }
+
+/* ---------- chips ---------- */
+.sp-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.sp-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(255, 255, 255, .05); border: 1px solid var(--surface-border);
+  border-radius: 20px; padding: 4px 6px 4px 11px; font-size: 11.8px; color: #d5d7df;
+}
+.sp-chip button { color: #8b8f9e; font-size: 13px; line-height: 1; padding: 0 4px; }
+.sp-chip button:hover { color: #f87171; }
+
+/* ---------- tables ---------- */
+.sp-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12.6px; }
+.sp-table th {
+  text-align: left; font-size: 10.5px; letter-spacing: .7px; text-transform: uppercase;
+  color: #6b6f7d; font-weight: 600; padding: 6px 10px 8px; border-bottom: 1px solid var(--surface-border);
+}
+.sp-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255, 255, 255, .045); vertical-align: middle; }
+.sp-table tr:last-child td { border-bottom: none; }
+.sp-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.6px; color: #a9adba; }
+.sp-empty { text-align: center; padding: 22px; color: #6b6f7d; font-size: 12.4px; }
+
+/* ---------- grid of facts ---------- */
+.sp-grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 10px; }
+.sp-fact { background: #17171a; border: 1px solid var(--surface-border); border-radius: 10px; padding: 10px 12px; }
+.sp-fact label { font-size: 10.4px; text-transform: uppercase; letter-spacing: .7px; color: #6b6f7d; }
+.sp-fact div { margin-top: 3px; font-size: 12.6px; word-break: break-all; }
+
+/* ---------- modal ---------- */
+.sp-scrim {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, .6); backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center; z-index: 120;
+}
+.sp-scrim.open { display: flex; }
+.sp-modal {
+  width: min(520px, 92vw); background: #161618; border: 1px solid var(--surface-border);
+  border-radius: 15px; padding: 22px; animation: spFade .2s ease;
+}
+.sp-modal h3 { font-size: 15.5px; margin-bottom: 8px; }
+.sp-modal .row-end { display: flex; gap: 9px; justify-content: flex-end; margin-top: 18px; }
+
+/* ---------- respect reduced motion ---------- */
+body.no-anim *, body.no-anim *::before, body.no-anim *::after {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+}
+
+
+/* ==========================================================================
+   v1.2 — transparent scrollbars, sub-menus, extension remove icons
+   ========================================================================== */
+
+/* ---------- transparent, overlay scrollbars ---------- */
+.settings-content-area,
+.settings-sidebar {
+  scrollbar-width: thin;                       /* Firefox-style */
+  scrollbar-color: rgba(255, 255, 255, .16) transparent;
+}
+.settings-content-area::-webkit-scrollbar,
+.settings-sidebar::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
+.settings-content-area::-webkit-scrollbar-track,
+.settings-sidebar::-webkit-scrollbar-track { background: transparent; }
+.settings-content-area::-webkit-scrollbar-thumb,
+.settings-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .14);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 10px;
+}
+.settings-content-area::-webkit-scrollbar-thumb:hover,
+.settings-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .28); background-clip: padding-box; }
+.settings-content-area::-webkit-scrollbar-corner { background: transparent; }
+
+/* every other scroller in the shell gets the same treatment */
+aside::-webkit-scrollbar, main::-webkit-scrollbar, .sp-table + *::-webkit-scrollbar { background: transparent; }
+
+/* ---------- sub-menus ---------- */
+.settings-sidebar .settings-nav-item.sp-sub {
+  margin: 1px 0 1px 22px;
+  padding: 6px 10px;
+  font-size: 12.4px;
+  color: #9ea2b0;
+  position: relative;
+}
+.settings-sidebar .settings-nav-item.sp-sub::before {
+  content: '';
+  position: absolute; left: -12px; top: 50%;
+  width: 8px; height: 1px; background: rgba(255, 255, 255, .14);
+}
+.settings-sidebar .settings-nav-item.sp-sub:hover { color: #dfe1e8; background: rgba(255, 255, 255, .05); }
+.settings-sidebar .settings-nav-item.sp-sub.active { background: rgba(99, 102, 241, .14); color: #c7c9ff; font-weight: 600; }
+
+/* sub-page switcher rendered at the top of a section */
+.sp-subnav {
+  display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.sp-pill-btn {
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--surface-border);
+  color: #b7bac4;
+  padding: 6px 13px; border-radius: 20px; font-size: 12.2px; cursor: pointer; transition: .15s;
+}
+.sp-pill-btn:hover { background: rgba(255, 255, 255, .1); color: #fff; }
+.sp-pill-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+/* ---------- extension remove icon ---------- */
+.sp-ext-del {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; border: 1px solid transparent;
+  background: rgba(255, 255, 255, .05);
+  color: #9aa0ad; cursor: pointer; transition: .14s;
+}
+.sp-ext-del:hover { background: rgba(239, 68, 68, .16); border-color: rgba(239, 68, 68, .35); color: #f87171; }
+.ext-card .sp-ext-del { margin-right: 2px; }
+
+
+/* ==========================================================================
+   v1.3 — settings layout: scrolling sidebar, breathing room, visible scroller
+   ========================================================================== */
+
+/* ---------- the sidebar must scroll (it was overflowing and getting clipped) ---------- */
+#settings-screen { overflow: hidden; }
+.settings-sidebar {
+  width: 244px;
+  flex: 0 0 244px;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding: 14px 12px 18px;
+  gap: 3px;
+  scrollbar-gutter: stable;
+}
+/* never let flex squash the buttons — that is what made them unclickable */
+.settings-sidebar > * { flex: 0 0 auto !important; }
+.settings-sidebar h3 { margin: 4px 0 10px; padding-left: 8px; }
+.settings-sidebar .settings-nav-item {
+  padding: 8px 11px;
+  min-height: 34px;
+  font-size: 12.7px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.settings-sidebar .settings-nav-item > span { font-size: 13px; flex: 0 0 auto; }
+.settings-sidebar .settings-nav-item.sp-sub { margin: 0 0 0 20px; padding: 6px 10px; min-height: 29px; font-size: 12px; }
+
+/* search box stays put while the nav scrolls */
+#sp-nav-search-wrap {
+  position: sticky; top: 0; z-index: 6;
+  background: linear-gradient(#121212 78%, rgba(18, 18, 18, 0));
+  padding: 2px 2px 10px;
+  margin: 0 0 8px;
+}
+#sp-nav-search { width: 100%; min-width: 0; box-sizing: border-box; }
+
+/* ---------- content area: roomier, and it actually scrolls ---------- */
+.settings-content-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 28px 42px 64px;
+  gap: 20px;
+}
+.settings-panel-section { max-width: 760px; gap: 18px; padding-bottom: 32px; }
+.setting-card { padding: 15px 18px; gap: 12px; }
+.setting-card-row { gap: 18px; padding: 3px 0; }
+.setting-card h4 { font-size: 13.2px; }
+.setting-card p { font-size: 12px; line-height: 1.5; }
+
+/* ---------- sub-page switcher sticks to the top ---------- */
+.sp-subnav {
+  position: sticky; top: -28px; z-index: 5;
+  background: #0b0b0b;
+  box-shadow: 0 10px 14px -8px #0b0b0b;
+  padding: 14px 0 10px;
+  margin: -14px 0 4px;
+}
+
+/* ---------- scrollbars: transparent track, but a thumb you can actually see ---------- */
+.settings-content-area,
+.settings-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .3) transparent;
+}
+.settings-content-area::-webkit-scrollbar,
+.settings-sidebar::-webkit-scrollbar { width: 12px; height: 12px; background: transparent; }
+.settings-content-area::-webkit-scrollbar-track,
+.settings-sidebar::-webkit-scrollbar-track { background: transparent; }
+.settings-content-area::-webkit-scrollbar-thumb,
+.settings-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .28);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 12px;
+  min-height: 44px;
+}
+.settings-content-area::-webkit-scrollbar-thumb:hover,
+.settings-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .5); background-clip: padding-box; }
+.settings-content-area::-webkit-scrollbar-corner { background: transparent; }
+/* Spinner animation for update checker */
+@keyframes spSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

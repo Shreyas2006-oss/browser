@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Silence Extensions</title>
+<style>
+  :root{
+    --bg:#0b0b0b;
+    --surface:rgba(22,22,22,.94);
+    --surface-2:#161616;
+    --surface-3:#1d1d20;
+    --border:rgba(255,255,255,.08);
+    --accent:#6366f1;
+    --accent-soft:rgba(99,102,241,.16);
+    --green:#22c55e;
+    --red:#ef4444;
+    --text:#f3f4f6;
+    --muted:#8b8f9e;
+    --radius:14px;
+    --header-h:58px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:6px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+  ::-webkit-scrollbar-track{background:transparent}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input{font-family:inherit}
+
+  /* ---------------- header ---------------- */
+  header{
+    height:var(--header-h);
+    display:flex;align-items:center;gap:18px;
+    padding:0 20px;
+    border-bottom:1px solid var(--border);
+    background:rgba(11,11,11,.92);
+    backdrop-filter:blur(18px);
+    position:relative;z-index:40;
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:186px}
+  .brand svg{width:24px;height:24px;color:var(--accent)}
+  .brand b{font-size:16px;letter-spacing:.2px}
+  .brand span{
+    font-size:11px;color:var(--muted);border:1px solid var(--border);
+    padding:2px 6px;border-radius:6px;margin-left:2px
+  }
+  .searchwrap{flex:1;max-width:640px;position:relative}
+  .searchwrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
+  #search{
+    width:100%;height:38px;border-radius:19px;
+    background:var(--surface-3);border:1px solid var(--border);
+    color:var(--text);padding:0 40px 0 38px;font-size:13.5px;outline:none;
+    transition:border-color .15s, background .15s;
+  }
+  #search:focus{border-color:var(--accent);background:#202024}
+  #search::placeholder{color:#6b6f7d}
+  .kbd{
+    position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    font-size:10.5px;color:#6b6f7d;border:1px solid var(--border);border-radius:5px;padding:1px 5px
+  }
+  .hbtn{
+    height:34px;padding:0 14px;border-radius:9px;font-size:13px;font-weight:500;
+    border:1px solid var(--border);color:var(--text);background:var(--surface-3);
+    display:flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap
+  }
+  .hbtn:hover{background:#26262b;border-color:rgba(255,255,255,.16)}
+  .hbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hbtn.primary:hover{background:#5457e5}
+
+  /* ---------------- layout ---------------- */
+  .shell{display:flex;height:calc(100% - var(--header-h))}
+  aside{
+    width:214px;flex:0 0 214px;border-right:1px solid var(--border);
+    padding:16px 10px;overflow-y:auto;background:#0d0d0f
+  }
+  .nav-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:#616574;padding:12px 10px 6px}
+  .nav{
+    width:100%;display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;
+    font-size:13.5px;color:#c8cad3;transition:.13s;text-align:left
+  }
+  .nav:hover{background:rgba(255,255,255,.05);color:#fff}
+  .nav.active{background:var(--accent-soft);color:#c7c9ff;font-weight:600}
+  .nav .ico{width:17px;text-align:center;font-size:13px;opacity:.9}
+  .nav .cnt{margin-left:auto;font-size:11px;color:#6b6f7d}
+  main{flex:1;overflow-y:auto;padding:22px 26px 60px;scroll-behavior:smooth}
+
+  /* ---------------- hero ---------------- */
+  .hero{
+    border-radius:18px;padding:26px 28px;margin-bottom:26px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(900px 220px at 12% -30%, rgba(99,102,241,.40), transparent 60%),
+      radial-gradient(600px 200px at 88% 140%, rgba(236,72,153,.22), transparent 60%),
+      linear-gradient(180deg,#191921,#121216);
+    border:1px solid rgba(255,255,255,.07)
+  }
+  .hero h1{font-size:25px;letter-spacing:-.3px;margin-bottom:8px}
+  .hero p{color:#b9bcc7;max-width:640px;line-height:1.55;font-size:13.5px}
+  .hero .chips{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .chip{
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);
+    padding:6px 12px;border-radius:20px;font-size:12.5px;color:#d6d8e0;transition:.15s
+  }
+  .chip:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+  .status{
+    display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:#9ea2b0;
+    background:rgba(255,255,255,.05);border:1px solid var(--border);padding:5px 11px;border-radius:20px;margin-top:16px
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .dot.warn{background:#f59e0b;box-shadow:0 0 8px #f59e0b}
+
+  /* ---------------- sections / grid ---------------- */
+  .sec-head{display:flex;align-items:baseline;gap:10px;margin:26px 0 13px}
+  .sec-head h2{font-size:16.5px;letter-spacing:-.2px}
+  .sec-head span{font-size:12.5px;color:var(--muted)}
+  .sec-head .more{margin-left:auto;font-size:12.5px;color:var(--accent)}
+  .sec-head .more:hover{text-decoration:underline}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+  .card{
+    display:flex;gap:13px;padding:14px;border-radius:var(--radius);
+    background:var(--surface-2);border:1px solid var(--border);
+    transition:transform .14s ease, border-color .14s, background .14s;cursor:pointer
+  }
+  .card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.18);background:#1a1a1e}
+  .card .ic{
+    width:46px;height:46px;flex:0 0 46px;border-radius:11px;object-fit:contain;background:#0f0f12;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;color:#fff
+  }
+  .card .body{min-width:0;flex:1;display:flex;flex-direction:column}
+  .card .name{
+    font-weight:600;font-size:13.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .card .meta{font-size:11.8px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .desc{
+    font-size:12.4px;color:#9ea2b0;line-height:1.45;margin-top:6px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+  }
+  .card .foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:9px}
+  .tag{
+    font-size:10.5px;color:#a5a8b4;border:1px solid var(--border);
+    padding:2px 7px;border-radius:6px;background:rgba(255,255,255,.03)
+  }
+  .tag.mv3{border-color:rgba(99,102,241,.45);color:#a5a8ff}
+  .tag.mv2{border-color:rgba(245,158,11,.4);color:#f5c26b}
+
+  .btn{
+    margin-left:auto;height:30px;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;
+    background:var(--accent);color:#fff;transition:.15s;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center
+  }
+  .btn:hover{background:#5457e5}
+  .btn.ghost{background:rgba(255,255,255,.07);color:#d8dae2}
+  .btn.ghost:hover{background:rgba(255,255,255,.13)}
+  .btn.installed{background:rgba(34,197,94,.16);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+  .btn.installed:hover{background:rgba(239,68,68,.16);color:#f87171;border-color:rgba(239,68,68,.3)}
+  .btn[disabled]{opacity:.75;pointer-events:none}
+  .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);border-radius:0 2px 2px 0;transition:width .18s}
+
+  /* ---------------- detail ---------------- */
+  .back{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);margin-bottom:16px}
+  .back:hover{color:#fff}
+  .detail-top{display:flex;gap:20px;padding:22px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border)}
+  .detail-top .ic{width:84px;height:84px;flex:0 0 84px;border-radius:20px;background:#0f0f12;object-fit:contain}
+  .detail-top h1{font-size:22px;letter-spacing:-.3px}
+  .detail-top .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .detail-top .desc{color:#c3c6d0;line-height:1.6;margin-top:12px;max-width:660px;font-size:13.5px}
+  .detail-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+  .facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:18px}
+  .fact{background:var(--surface-3);border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+  .fact label{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:#6b6f7d;display:block}
+  .fact div{font-size:13px;margin-top:4px;word-break:break-all}
+  .note{
+    margin-top:16px;padding:12px 14px;border-radius:11px;font-size:12.6px;line-height:1.55;
+    background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.28);color:#f3d4a0
+  }
+
+  /* ---------------- manage ---------------- */
+  .row{
+    display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:12px;
+    background:var(--surface-2);border:1px solid var(--border);margin-bottom:9px
+  }
+  .row .ic{width:38px;height:38px;flex:0 0 38px;border-radius:10px;object-fit:contain;background:#0f0f12}
+  .row .t{font-weight:600;font-size:13.6px}
+  .row .s{font-size:11.8px;color:var(--muted);margin-top:2px}
+  .row .acts{margin-left:auto;display:flex;gap:7px}
+  .mini{
+    height:28px;padding:0 11px;border-radius:8px;font-size:12px;background:rgba(255,255,255,.06);
+    border:1px solid var(--border);color:#d5d7df;transition:.15s
+  }
+  .mini:hover{background:rgba(255,255,255,.13)}
+  .mini.danger:hover{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.35);color:#f87171}
+  .empty{text-align:center;padding:70px 20px;color:var(--muted)}
+  .empty .big{font-size:38px;margin-bottom:12px;opacity:.6}
+
+  /* ---------------- modal + toast ---------------- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:80
+  }
+  .scrim.open{display:flex}
+  .modal{
+    width:min(560px,92vw);background:var(--surface-2);border:1px solid var(--border);
+    border-radius:16px;padding:22px
+  }
+  .modal h3{font-size:16px;margin-bottom:6px}
+  .modal p{font-size:12.8px;color:var(--muted);line-height:1.55;margin-bottom:14px}
+  .modal input{
+    width:100%;height:40px;border-radius:10px;background:var(--surface-3);border:1px solid var(--border);
+    color:var(--text);padding:0 13px;font-size:13.5px;outline:none
+  }
+  .modal input:focus{border-color:var(--accent)}
+  .modal .rowbtn{display:flex;gap:9px;justify-content:flex-end;margin-top:16px}
+  .toasts{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:9px;z-index:90}
+  .toast{
+    min-width:250px;max-width:390px;background:#1c1c21;border:1px solid var(--border);
+    border-left:3px solid var(--accent);border-radius:11px;padding:12px 14px;font-size:13px;
+    box-shadow:0 14px 40px rgba(0,0,0,.5);animation:pop .22s ease
+  }
+  .toast.ok{border-left-color:var(--green)}
+  .toast.err{border-left-color:var(--red)}
+  .toast .t2{font-size:11.6px;color:var(--muted);margin-top:4px;line-height:1.45}
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+  footer{color:#5c6070;font-size:11.5px;text-align:center;padding:30px 0 8px;line-height:1.7}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5a2.5 2.5 0 0 0-5 0V5H4a2 2 0 0 0-2 2v3.8h1.5a2.5 2.5 0 0 1 0 5H2V20a2 2 0 0 0 2 2h3.8v-1.5a2.5 2.5 0 0 1 5 0V22H17a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 0 0 0-5z"/>
+    </svg>
+    <b>Silence</b><span>Extensions</span>
+  </div>
+  <div class="searchwrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+    <input id="search" placeholder="Search extensions, or paste a Chrome Web Store link…" autocomplete="off" spellcheck="false" />
+    <span class="kbd">/</span>
+  </div>
+  <button class="hbtn" id="manage-btn">Manage</button>
+  <button class="hbtn primary" id="url-btn">+ Install by URL / ID</button>
+</header>
+
+<div class="shell">
+  <aside id="nav"></aside>
+  <main id="view"></main>
+</div>
+
+<div class="scrim" id="url-modal">
+  <div class="modal">
+    <h3>Install any extension</h3>
+    <p>Paste a Chrome Web Store link, a 32-character extension ID, or a direct <code>.crx</code> / <code>.zip</code> URL. Silence fetches the package directly from Google's extension service — no store page, no account.</p>
+    <input id="url-input" placeholder="https://chromewebstore.google.com/detail/dark-reader/eimadpbcbfnmbkopoojfekhnkhdbieeh" spellcheck="false" />
+    <div class="rowbtn">
+      <button class="hbtn" id="url-cancel">Cancel</button>
+      <button class="hbtn primary" id="url-go">Install</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ==================================================================== *
+ * catalog (embedded — verified September 2026, refreshed by the store
+ * backend from catalog.json when it is available)
+ * ==================================================================== */
+const CATALOG = __CATALOG_JSON__;
+
+const CATEGORIES = [
+  { id: 'home',        label: 'Home',        icon: '🏠' },
+  { id: 'featured',    label: 'Featured',    icon: '⭐' },
+  { id: 'privacy',     label: 'Privacy & Security', icon: '🛡️' },
+  { id: 'developer',   label: 'Developer tools',    icon: '🧑‍💻' },
+  { id: 'productivity',label: 'Productivity',       icon: '🗂️' },
+  { id: 'media',       label: 'Video & Music',      icon: '▶️' },
+  { id: 'appearance',  label: 'Appearance',         icon: '🎨' },
+  { id: 'writing',     label: 'Writing & Translate',icon: '✍️' },
+  { id: 'utility',     label: 'Utilities',          icon: '🧰' }
+];
+
+/* ------------------------------ state ------------------------------ */
+const S = {
+  view: 'home',
+  query: '',
+  detail: null,
+  installed: new Map(),   // storeId|extId -> record
+  busy: new Map(),        // id -> percent
+  real: !!(window.SilenceStore && window.SilenceStore.real)
+};
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtSize = (kb) => !kb ? '—' : kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB';
+
+/* ------------------------------ toasts ----------------------------- */
+function toast(msg, kind = '', sub = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind;
+  el.innerHTML = '<div>' + esc(msg) + '</div>' + (sub ? '<div class="t2">' + esc(sub) + '</div>' : '');
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; setTimeout(() => el.remove(), 250); }, kind === 'err' ? 7000 : 3800);
+}
+
+/* --------------------------- installed sync ------------------------ */
+function keyOf(rec) { return rec.storeId || rec.id; }
+
+async function refreshInstalled() {
+  if (!S.real) return;
+  try {
+    const list = await window.SilenceStore.listInstalled();
+    S.installed.clear();
+    (list || []).forEach(rec => { S.installed.set(rec.storeId || rec.id, rec); S.installed.set(rec.id, rec); });
+    render();
+  } catch (e) { /* ignore */ }
+}
+
+if (S.real) {
+  window.SilenceStore.onProgress(({ id, stage, percent, received, total }) => {
+    if (stage === 'done') { S.busy.delete(id); } else { S.busy.set(id, percent); }
+    render();
+  });
+  window.SilenceStore.onChanged(() => refreshInstalled());
+}
+
+/* ------------------------------ install ---------------------------- */
+async function install(item) {
+  const id = item.id;
+  if (!S.real) {                       // preview / demo mode
+    S.busy.set(id, 0);
+    render();
+    for (let p = 12; p <= 100; p += Math.ceil(Math.random() * 22)) {
+      await new Promise(r => setTimeout(r, 130));
+      S.busy.set(id, Math.min(p, 100)); render();
+    }
+    S.busy.delete(id);
+    S.installed.set(id, { id, name: item.name, version: item.version, storeId: id });
+    render();
+    toast('Preview mode — ' + item.name + ' would be installed', '', 'Open this page inside Silence (silence://store) to install for real.');
+    return;
+  }
+  S.busy.set(id, 0); render();
+  const res = await window.SilenceStore.install(id);
+  S.busy.delete(id);
+  if (res && res.success) {
+    S.installed.set(id, res.extension);
+    S.installed.set(res.extension.id, res.extension);
+    render();
+    toast('Added ' + (res.extension.name || item.name), 'ok', 'Pin it from the extensions toolbar in Silence.');
+  } else {
+    render();
+    const hint = res && res.code === 'CWS_204'
+      ? 'Google blocks direct .crx downloads for this one — try an alternative listing or load the unpacked folder.'
+      : (res && res.code === 'CWS_404' ? 'Double-check the extension ID.' : 'Check your internet connection and try again.');
+    toast('Could not install ' + item.name, 'err', (res && res.error ? res.error + ' — ' : '') + hint);
+  }
+}
+
+async function uninstall(id) {
+  if (!S.real) { const rec = S.installed.get(id); S.installed.delete(id); S.installed.delete(rec && rec.id); render(); toast('Preview mode — removed'); return; }
+  const res = await window.SilenceStore.uninstall(id);
+  if (res && res.success) { const rec = S.installed.get(id); S.installed.delete(id); if (rec) S.installed.delete(rec.id); render(); toast('Removed', 'ok'); }
+  else toast('Could not remove', 'err', res && res.error);
+}
+
+async function updateExt(id) {
+  if (!S.real) { toast('Preview mode'); return; }
+  S.busy.set(id, 0); render();
+  const res = await window.SilenceStore.update(id);
+  S.busy.delete(id); render();
+  if (res && res.success) toast(res.updated ? 'Updated to v' + res.extension.version : 'Already up to date (v' + res.extension.version + ')', 'ok');
+  else toast('Update failed', 'err', res && res.error);
+}
+
+/* ------------------------------ rendering -------------------------- */
+function items() { return CATALOG.items || []; }
+function catLabel(id) { return (CATEGORIES.find(c => c.id === id) || {}).label || 'Other'; }
+
+function filtered(q) {
+  const s = (q || S.query || '').trim().toLowerCase();
+  if (!s) return items();
+  return items().filter(i =>
+    (i.name + ' ' + i.description + ' ' + catLabel(i.category) + ' ' + (i.author || '') + ' ' + i.id).toLowerCase().includes(s)
+  );
+}
+
+function iconHtml(item, cls = 'ic') {
+  return item.icon
+    ? '<img class="' + cls + '" src="' + item.icon + '" alt="" />'
+    : '<div class="' + cls + '" style="background:linear-gradient(135deg,#6366f1,#ec4899)">' + esc((item.name || '?').charAt(0).toUpperCase()) + '</div>';
+}
+
+function installBtn(item) {
+  const id = item.id;
+  const rec = S.installed.get(id);
+  if (S.busy.has(id)) {
+    const p = S.busy.get(id);
+    return '<button class="btn" disabled style="position:relative;overflow:hidden">Installing ' + (p ? p + '%' : '') +
+           '<span class="bar" style="width:' + (p || 8) + '%"></span></button>';
+  }
+  if (rec) return '<button class="btn installed" data-remove="' + esc(rec.id || id) + '" data-key="' + esc(id) + '">Added ✓</button>';
+  return '<button class="btn" data-install="' + esc(id) + '">Add to Silence</button>';
+}
+
+function cardHtml(item) {
+  return '<div class="card" data-open="' + esc(item.id) + '">' +
+    iconHtml(item) +
+    '<div class="body">' +
+      '<div class="name">' + esc(item.name) + '</div>' +
+      '<div class="meta">' + esc(item.author || catLabel(item.category)) + ' · ' + esc(catLabel(item.category)) + '</div>' +
+      '<div class="desc">' + esc(item.description || '') + '</div>' +
+      '<div class="foot">' +
+        '<span class="tag">Free</span>' +
+        '<span class="tag mv' + (item.mv || 3) + '">MV' + (item.mv || 3) + '</span>' +
+        '<span class="tag">' + fmtSize(item.size) + '</span>' +
+        installBtn(item) +
+      '</div>' +
+    '</div></div>';
+}
+
+function sectionHtml(title, list, moreCat) {
+  if (!list.length) return '';
+  return '<div class="sec-head"><h2>' + esc(title) + '</h2><span>' + list.length + '</span>' +
+    (moreCat ? '<a class="more" data-cat="' + moreCat + '">See all →</a>' : '') + '</div>' +
+    '<div class="grid">' + list.map(cardHtml).join('') + '</div>';
+}
+
+function renderNav() {
+  const counts = { featured: items().filter(i => i.featured).length };
+  items().forEach(i => { counts[i.category] = (counts[i.category] || 0) + 1; });
+  const nav = [CATEGORIES[0], CATEGORIES[1]].map(c =>
+      '<button class="nav' + (S.view === c.id ? ' active' : '') + '" data-cat="' + c.id + '"><span class="ico">' + c.icon + '</span>' + c.label +
+      (counts[c.id] ? '<span class="cnt">' + counts[c.id] + '</span>' : '') + '</button>');
+  nav.push('<div class="nav-label">Categories</div>');
+  CATEGORIES.slice(2).forEach(c => nav.push(
+    '<button class="nav' + (S.view === c.id ? ' active' : '') + '" data-cat="' + c.id + '"><span class="ico">' + c.icon + '</span>' + c.label +
+    (counts[c.id] ? '<span class="cnt">' + counts[c.id] + '</span>' : '') + '</button>'));
+  nav.push('<div class="nav-label">Yours</div>');
+  nav.push('<button class="nav' + (S.view === 'manage' ? ' active' : '') + '" data-cat="manage"><span class="ico">🧩</span>Installed<span class="cnt">' + S.installed.size / 1 + '</span></button>');
+  nav.push('<button class="nav" data-cat="unpacked"><span class="ico">📂</span>Load unpacked</button>');
+  $('#nav').innerHTML = nav.join('');
+}
+
+function render() {
+  renderNav();
+  const v = $('#view');
+
+  if (S.view === 'detail' && S.detail) return renderDetail();
+
+  if (S.view === 'manage') {
+    const recs = [];
+    const seen = new Set();
+    S.installed.forEach(r => { const k = r.id; if (!seen.has(k)) { seen.add(k); recs.push(r); } });
+    v.innerHTML =
+      '<div class="sec-head"><h2>Installed extensions</h2><span>' + recs.length + '</span></div>' +
+      (recs.length ? recs.map(r =>
+        '<div class="row">' + iconHtml({ name: r.name, icon: r.icon }) +
+        '<div><div class="t">' + esc(r.name || r.id) + '</div>' +
+        '<div class="s">v' + esc(r.version || '?') + ' · ' + esc(r.source || 'unknown') + (r.storeId ? ' · ' + esc(r.storeId) : '') + '</div></div>' +
+        '<div class="acts">' +
+          (r.storeId ? '<button class="mini" data-update="' + esc(r.id) + '">' + (S.busy.has(r.storeId) ? 'Updating…' : 'Update') + '</button>' : '') +
+          '<button class="mini" data-folder="' + esc(r.id) + '">Folder</button>' +
+          '<button class="mini danger" data-remove2="' + esc(r.id) + '">Remove</button>' +
+        '</div></div>').join('')
+       : '<div class="empty"><div class="big">🧩</div><div>Nothing installed yet.</div><div style="margin-top:6px">Browse the store and hit <b>Add to Silence</b>.</div></div>');
+    return;
+  }
+
+  if (S.query.trim()) {
+    const res = filtered();
+    v.innerHTML = '<div class="sec-head"><h2>Results for “' + esc(S.query) + '”</h2><span>' + res.length + '</span></div>' +
+      (res.length ? '<div class="grid">' + res.map(cardHtml).join('') + '</div>'
+                  : '<div class="empty"><div class="big">🔍</div><div>No match in the built-in catalog.</div>' +
+                    '<div style="margin-top:8px">Install it anyway with <b>Install by URL / ID</b> — paste the Web Store link.</div></div>');
+    return;
+  }
+
+  if (S.view === 'featured') {
+    v.innerHTML = sectionHtml('Featured', items().filter(i => i.featured));
+    return;
+  }
+
+  if (S.view !== 'home') {
+    const list = items().filter(i => i.category === S.view);
+    v.innerHTML = '<div class="sec-head"><h2>' + esc(catLabel(S.view)) + '</h2><span>' + list.length + ' extensions</span></div>' +
+      '<div class="grid">' + list.map(cardHtml).join('') + '</div>';
+    return;
+  }
+
+  const featured = items().filter(i => i.featured);
+  v.innerHTML =
+    '<div class="hero">' +
+      '<h1>Add power to Silence</h1>' +
+      '<p>One-click extensions, installed straight into your browser. Every package is fetched directly from Google’s ' +
+      'extension service — no Chrome Web Store page, no sign-in, no "Add to Chrome" button that refuses to work.</p>' +
+      '<div class="chips">' +
+        ['Dark Reader', 'uBlock Origin', 'Tampermonkey', 'React DevTools', 'Vimium C', 'Bitwarden']
+          .map(n => { const it = items().find(i => (i.name || '').toLowerCase().includes(n.toLowerCase())); return it ? '<button class="chip" data-open="' + it.id + '">' + esc(it.name) + '</button>' : ''; }).join('') +
+      '</div>' +
+      '<div class="status"><span class="dot' + (S.real ? '' : ' warn') + '"></span>' +
+        (S.real ? 'Connected to Silence · ' + items().length + ' verified extensions · catalog ' + esc(CATALOG.generated || '')
+                : 'Preview mode — open this page inside Silence to install') +
+      '</div>' +
+    '</div>' +
+    sectionHtml('Featured', featured) +
+    sectionHtml('Privacy & Security', items().filter(i => i.category === 'privacy').slice(0, 6), 'privacy') +
+    sectionHtml('Developer tools', items().filter(i => i.category === 'developer').slice(0, 6), 'developer') +
+    sectionHtml('Productivity', items().filter(i => i.category === 'productivity').slice(0, 6), 'productivity') +
+    sectionHtml('Video & Music', items().filter(i => i.category === 'media').slice(0, 6), 'media') +
+    sectionHtml('Writing & Translate', items().filter(i => i.category === 'writing').slice(0, 6), 'writing') +
+    '<footer>Silence Extension Store · catalog generated ' + esc(CATALOG.generated || '') + ' · ' + items().length + ' extensions<br>' +
+    'Extensions run on Electron’s Chrome-extension runtime. Most content-script and toolbar extensions work; a few Chrome-only APIs may be limited.</footer>';
+}
+
+function renderDetail() {
+  const item = S.detail;
+  const rec = S.installed.get(item.id);
+  const v = $('#view');
+  v.innerHTML =
+    '<button class="back" id="back-btn">← Back</button>' +
+    '<div class="detail-top">' +
+      iconHtml(item, 'ic') +
+      '<div style="flex:1">' +
+        '<h1>' + esc(item.name) + '</h1>' +
+        '<div class="sub">' + esc(item.author || 'Community') + ' · ' + esc(catLabel(item.category)) + ' · v' + esc(item.version || '?') + '</div>' +
+        '<div class="desc">' + esc(item.description || '') + '</div>' +
+        '<div class="detail-actions">' +
+          installBtn(item) +
+          '<button class="hbtn" data-openurl="https://chromewebstore.google.com/detail/' + esc(item.id) + '">View on Web Store</button>' +
+          '<button class="hbtn" data-copy="' + esc(item.id) + '">Copy ID</button>' +
+        '</div>' +
+        '<div class="facts">' +
+          '<div class="fact"><label>Version</label><div>' + esc(item.version || '—') + '</div></div>' +
+          '<div class="fact"><label>Size</label><div>' + fmtSize(item.size) + '</div></div>' +
+          '<div class="fact"><label>Manifest</label><div>MV' + esc(item.mv || 3) + '</div></div>' +
+          '<div class="fact"><label>Source</label><div>' + esc(item.source && item.source.type === 'github' ? 'GitHub release' : 'Chrome CRX service') + '</div></div>' +
+          '<div class="fact"><label>Extension ID</label><div>' + esc(item.id) + '</div></div>' +
+        '</div>' +
+        (item.note ? '<div class="note">' + esc(item.note) + '</div>' : '') +
+        (rec ? '<div class="note" style="background:rgba(34,197,94,.09);border-color:rgba(34,197,94,.28);color:#a7f3c0">Installed at <code>' + esc(rec.dir || '') + '</code></div>' : '') +
+      '</div>' +
+    '</div>';
+  const b = document.getElementById('back-btn');
+  if (b) b.onclick = () => { S.view = S.query.trim() ? 'home' : (S.lastList || 'home'); S.detail = null; render(); };
+}
+
+/* ------------------------------ events ----------------------------- */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-open],[data-cat],[data-install],[data-remove],[data-remove2],[data-update],[data-folder],[data-openurl],[data-copy]');
+  if (!t) return;
+  if (t.dataset.cat) {
+    if (t.dataset.cat === 'unpacked') {
+      if (!S.real) return toast('Preview mode');
+      const r = await window.SilenceStore.browseUnpacked();
+      if (r && r.success) { toast('Loaded ' + r.extension.name, 'ok'); refreshInstalled(); }
+      else if (r && !r.cancelled) toast('Could not load folder', 'err', r.error);
+      return;
+    }
+    S.view = t.dataset.cat; S.detail = null; S.lastList = t.dataset.cat; render(); $('#view').scrollTop = 0; return;
+  }
+  if (t.dataset.open) {
+    const item = items().find(i => i.id === t.dataset.open);
+    if (item && !e.target.closest('[data-install],[data-remove]')) { S.detail = item; S.view = 'detail'; render(); $('#view').scrollTop = 0; }
+    return;
+  }
+  if (t.dataset.install) {
+    e.stopPropagation();
+    const item = items().find(i => i.id === t.dataset.install);
+    if (item) install(item);
+    return;
+  }
+  if (t.dataset.remove) { e.stopPropagation(); uninstall(t.dataset.remove); S.installed.delete(t.dataset.key); render(); return; }
+  if (t.dataset.remove2) { uninstall(t.dataset.remove2); return; }
+  if (t.dataset.update) { updateExt(t.dataset.update); return; }
+  if (t.dataset.folder) { if (S.real) window.SilenceStore.openFolder(t.dataset.folder); return; }
+  if (t.dataset.openurl) { if (S.real) window.SilenceStore.openUrl(t.dataset.openurl); else window.open(t.dataset.openurl, '_blank'); return; }
+  if (t.dataset.copy) {
+    try { navigator.clipboard.writeText(t.dataset.copy); toast('ID copied', 'ok', t.dataset.copy); } catch { toast(t.dataset.copy); }
+    return;
+  }
+});
+
+let searchTimer = null;
+$('#search').addEventListener('input', (e) => {
+  clearTimeout(searchTimer);
+  const val = e.target.value;
+  searchTimer = setTimeout(() => {
+    S.query = val; S.view = 'home'; S.detail = null;
+    // typing a web store link? offer direct install
+    render();
+  }, 160);
+});
+$('#search').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.target.value = ''; S.query = ''; render(); } });
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== $('#search')) { e.preventDefault(); $('#search').focus(); }
+  if (e.key === 'Escape' && S.view === 'detail') { S.view = 'home'; S.detail = null; render(); }
+});
+
+$('#manage-btn').onclick = () => { S.view = 'manage'; S.detail = null; S.query = ''; $('#search').value = ''; render(); };
+$('#url-btn').onclick = () => { $('#url-modal').classList.add('open'); $('#url-input').focus(); };
+$('#url-cancel').onclick = () => $('#url-modal').classList.remove('open');
+$('#url-modal').addEventListener('click', (e) => { if (e.target.id === 'url-modal') $('#url-modal').classList.remove('open'); });
+$('#url-go').onclick = async () => {
+  const val = $('#url-input').value.trim();
+  if (!val) return;
+  $('#url-modal').classList.remove('open');
+  if (!S.real) { toast('Preview mode — would install from: ' + val); return; }
+  toast('Installing…');
+  const res = await window.SilenceStore.installUrl(val);
+  if (res && res.success) { toast('Added ' + res.extension.name, 'ok'); refreshInstalled(); }
+  else toast('Install failed', 'err', (res && res.error) || 'Unsupported link');
+  $('#url-input').value = '';
+};
+
+/* ------------------------------- boot ------------------------------ */
+(async function boot() {
+  // silence://extensions opens straight on the manager
+  const host = (location.hostname || '').toLowerCase();
+  const path = (location.pathname || '').toLowerCase();
+  if (host === 'extensions' || path.includes('manage')) { S.view = 'manage'; }
+  render();
+  if (S.real) {
+    // prefer the live catalog shipped next to the app (so you can add your own items)
+    try {
+      const live = await window.SilenceStore.catalog();
+      if (live && live.items && live.items.length) { CATALOG.items = live.items; CATALOG.generated = live.generated || CATALOG.generated; }
+    } catch {}
+    await refreshInstalled();
+  } else {
+    render();
+  }
+})();
+</script>
+
+</body>
+</html>
